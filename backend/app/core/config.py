@@ -18,7 +18,9 @@ class Settings(BaseSettings):
     OLLAMA_MODEL: str = "llama3"
     ANTHROPIC_API_KEY: Optional[str] = None
     ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20240620"
-    EMBEDDING_MODEL: Optional[str] = None
+    EMBEDDING_MODEL: Optional[str] = "all-MiniLM-L6-v2"
+    CHROMA_PERSIST_DIRECTORY: str = "./chroma_db"
+    CHROMA_COLLECTION_NAME: str = "transcript_chunks"
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
