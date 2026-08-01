@@ -9,7 +9,7 @@ from app.repositories.vector_store import VectorStore
 from app.repositories.vector_repository import VectorRepository
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_embedding_service():
     service = EmbeddingService(model_name="all-MiniLM-L6-v2")
     text = "Growth assistant product management tips."
@@ -25,7 +25,7 @@ async def test_embedding_service():
     assert len(embeddings[0]) == len(embedding)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_vector_repository_add_chunks():
     with tempfile.TemporaryDirectory() as tmp_dir:
         vector_store = VectorStore(
@@ -62,7 +62,7 @@ async def test_vector_repository_add_chunks():
         assert count == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_vector_repository_add_chunks_from_file():
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)

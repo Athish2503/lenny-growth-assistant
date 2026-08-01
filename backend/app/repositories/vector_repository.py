@@ -67,11 +67,15 @@ class VectorRepository:
             metadatas.append(_sanitize_metadata(raw_meta))
 
         collection = await self.vector_store.get_collection()
-        await collection.add(
-            ids=ids,
-            embeddings=embeddings,
-            documents=documents,
-            metadatas=metadatas,
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(
+            None,
+            lambda: collection.add(
+                ids=ids,
+                embeddings=embeddings,
+                documents=documents,
+                metadatas=metadatas,
+            )
         )
 
     async def add_chunks_from_file(self, file_path: Union[str, Path]) -> None:
