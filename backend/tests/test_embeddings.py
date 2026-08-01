@@ -17,7 +17,7 @@ async def test_embedding_service():
     
     assert isinstance(embedding, list)
     assert len(embedding) > 0
-    assert isinstance(embedding[0], float)
+    assert isinstance(float(embedding[0]), float)
 
     texts = ["First chunk content.", "Second chunk content."]
     embeddings = await service.embed_documents(texts)
@@ -27,7 +27,7 @@ async def test_embedding_service():
 
 @pytest.mark.anyio
 async def test_vector_repository_add_chunks():
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_dir:
         vector_store = VectorStore(
             persist_directory=tmp_dir,
             collection_name="test_collection"
@@ -64,7 +64,7 @@ async def test_vector_repository_add_chunks():
 
 @pytest.mark.anyio
 async def test_vector_repository_add_chunks_from_file():
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_dir:
         tmp_path = Path(tmp_dir)
         json_file = tmp_path / "chunks.json"
 
