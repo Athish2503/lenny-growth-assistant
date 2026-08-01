@@ -1,3 +1,4 @@
+import asyncio
 import tempfile
 import pytest
 from pathlib import Path
@@ -58,7 +59,8 @@ async def test_vector_repository_add_chunks():
         await repo.add_chunks(chunks)
 
         collection = await vector_store.get_collection()
-        count = await collection.count()
+        loop = asyncio.get_running_loop()
+        count = await loop.run_in_executor(None, collection.count)
         assert count == 2
 
 
@@ -88,5 +90,6 @@ async def test_vector_repository_add_chunks_from_file():
         await repo.add_chunks_from_file(json_file)
 
         collection = await vector_store.get_collection()
-        count = await collection.count()
+        loop = asyncio.get_running_loop()
+        count = await loop.run_in_executor(None, collection.count)
         assert count == 1

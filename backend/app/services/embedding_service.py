@@ -22,7 +22,7 @@ class EmbeddingService:
     def _embed_texts_sync(self, texts: List[str]) -> List[List[float]]:
         ef = self._get_ef()
         embeddings = ef(texts)
-        return [list(emb) for emb in embeddings]
+        return [[float(x) for x in emb] for emb in embeddings]
 
     async def embed_text(self, text: str) -> List[float]:
         """
