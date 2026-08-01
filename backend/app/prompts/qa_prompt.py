@@ -1,0 +1,47 @@
+"""
+Prompt builder for grounded Q&A tasks.
+"""
+
+from typing import List
+from app.retrieval.models import RetrievalResult
+
+
+def build_qa_prompt(query: str, context_chunks: List[RetrievalResult]) -> str:
+    """
+    Builds a grounded prompt for the LLM using retrieved context chunks.
+    Ensures clear instructions to answer strictly based on provided facts and include citations.
+    """
+    formatted_context_items = []
+    for idx, chunk in enumerate(context_chunks, start=1):
+        doc_id = chunk.doc_id or "unknown"
+        chunk_id = chunk.chunk_id or f"chunk-{idx}"
+        title = chunk.metadata.get("title") or chunk.metadata.get("source") or doc_id
+        
+        context_block = (
+            f"[Source {idx}]\n"
+            f"ID: {chunk_id}\n"
+            f"Title/Source: {title}\n"
+            f"Content:\n{chunk.content}\n"
+        )
+        formatted_context_items.append(context_block)
+
+    context_str = "\n".join(formatted_context_items) if formatted_context_items else "No relevant context found."
+
+    prompt = f"""You are a helpful and precise growth assistant. Answer the user's question accurately using ONLY the provided context sources below.
+
+INSTRUCTIONS:
+1. Provide a concise, clear, and direct answer to the question.
+2. Ground all claims in the provided context sources.
+3. Cite sources inline or at the end of statements using source identifiers (e.g., [Source 1], [chunk_id], or source titles).
+4. Do NOT generate long essays, unstructured narratives, or ungrounded speculation.
+5. Do NOT create external artifacts.
+6. If the context does not contain enough information to answer the question, state that clearly.
+
+CONTEXT SOURCES:
+{context_str}
+
+QUESTION:
+{query}
+
+ANSWER:"""
+    return prompt
