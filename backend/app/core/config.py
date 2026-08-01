@@ -12,10 +12,12 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Lenny Growth Assistant"
     DATABASE_URL: str = "sqlite:///./lenny_growth.db"
     
-    # Model & provider configuration placeholders (not modified or used here)
-    MODEL_PROVIDER: Optional[str] = "ollama"
-    OLLAMA_URL: Optional[str] = None
+    # Model & provider configuration
+    MODEL_PROVIDER: str = "ollama"
+    OLLAMA_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3"
     ANTHROPIC_API_KEY: Optional[str] = None
+    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20240620"
     EMBEDDING_MODEL: Optional[str] = None
 
     @field_validator("DATABASE_URL", mode="before")
