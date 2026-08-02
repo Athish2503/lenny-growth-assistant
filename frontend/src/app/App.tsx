@@ -9,6 +9,7 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { useKeyboard } from '@/hooks/useKeyboard';
 import { useUIStore } from '@/store/uiStore';
+import { useThemeStore } from '@/store/themeStore';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,6 +23,12 @@ const queryClient = new QueryClient({
 function AppShell() {
   useKeyboard();
   const { isMobileSidebarOpen, setMobileSidebarOpen } = useUIStore();
+  const { theme } = useThemeStore();
+
+  // Apply theme attribute on every render (handles initial load too)
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   return (
     <div className="app-layout">

@@ -37,9 +37,12 @@ export function useChat(sessionId: string | undefined) {
       const msgs = await chatApi.getMessages(sessionId);
       const existing = useChatStore.getState().messagesBySession[sessionId] || [];
       if (existing.length > 0) {
-        // Keep any unsaved or active streaming messages
+        // Keep active streaming messages or unsaved messages that don't exist in DB by ID or role+content
         const unsaved = existing.filter(
-          (m) => m.is_streaming || !msgs.some((dbM) => dbM.id === m.id)
+          (m) =>
+            m.is_streaming ||
+            (!msgs.some((dbM) => dbM.id === m.id) &&
+              !msgs.some((dbM) => dbM.role === m.role && dbM.content.trim() === m.content.trim()))
         );
         const merged = [...msgs, ...unsaved];
         setMessages(sessionId, merged);

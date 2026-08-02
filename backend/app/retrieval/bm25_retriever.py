@@ -70,10 +70,36 @@ class BM25Retriever(BaseRetriever):
             idf_val = math.log((self.doc_count - doc_freq + 0.5) / (doc_freq + 0.5) + 1.0)
             self.idf[token] = idf_val
 
+    def _auto_load_chunks(self) -> None:
+        """
+        Attempts to automatically load and index data/processed/chunks.json if available.
+        """
+        import json
+        from pathlib import Path
+        base_path = Path(__file__).resolve().parent.parent.parent
+        possible_paths = [
+            Path("data/processed/chunks.json"),
+            base_path / "data" / "processed" / "chunks.json",
+            base_path.parent / "data" / "processed" / "chunks.json",
+        ]
+        for p in possible_paths:
+            if p.exists():
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        chunks = json.load(f)
+                    if isinstance(chunks, list) and chunks:
+                        self.index(chunks)
+                        break
+                except Exception:
+                    pass
+
     async def retrieve(self, query: str, top_k: int = 5) -> List[RetrievalResult]:
         """
         Calculates BM25 relevance scores for the query against indexed corpus.
         """
+        if self.doc_count == 0:
+            self._auto_load_chunks()
+
         if not query.strip() or self.doc_count == 0:
             return []
 

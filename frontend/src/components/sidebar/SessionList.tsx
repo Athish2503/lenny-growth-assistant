@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  MessageSquare, MoreHorizontal, Pencil, Trash2, Check, X,
-} from 'lucide-react';
+import { MessageSquare, Pencil, Trash2, Check, X } from 'lucide-react';
 import { useSessions } from '@/hooks/useSessions';
 import { useUIStore } from '@/store/uiStore';
 import { useSessionStore } from '@/store/sessionStore';
 import type { Session } from '@/types';
 
+// ============================================================
+// Session Item
+// ============================================================
 interface SessionItemProps {
   session: Session;
   isActive: boolean;
@@ -17,12 +17,10 @@ interface SessionItemProps {
 
 export function SessionItem({ session, isActive, collapsed }: SessionItemProps) {
   const navigate = useNavigate();
-  const { renameSession, deleteSession } = useSessions();
+  const { sessions, renameSession, deleteSession, isDeleting } = useSessions();
   const { setMobileSidebarOpen } = useUIStore();
-  const [showMenu, setShowMenu] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(session.title);
-  const menuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -31,16 +29,6 @@ export function SessionItem({ session, isActive, collapsed }: SessionItemProps) 
       inputRef.current.select();
     }
   }, [isRenaming]);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setShowMenu(false);
-      }
-    };
-    if (showMenu) document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showMenu]);
 
   const handleClick = () => {
     if (isRenaming) return;
@@ -63,6 +51,21 @@ export function SessionItem({ session, isActive, collapsed }: SessionItemProps) 
     }
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Navigate away before deleting if this is the currently open chat
+    if (isActive) {
+      const others = sessions.filter((s) => s.id !== session.id);
+      if (others.length > 0) {
+        navigate(`/chat/${others[0].id}`);
+      } else {
+        navigate('/chat');
+      }
+    }
+    deleteSession(session.id);
+  };
+
+  // Collapsed sidebar — icon only
   if (collapsed) {
     return (
       <button
@@ -85,64 +88,74 @@ export function SessionItem({ session, isActive, collapsed }: SessionItemProps) 
       onKeyDown={(e) => e.key === 'Enter' && handleClick()}
     >
       {isRenaming ? (
-        <div className="flex items-center gap-1 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+        /* Rename inline input */
+        <div
+          className="flex items-center gap-1 flex-1 min-w-0"
+          onClick={(e) => e.stopPropagation()}
+        >
           <input
             ref={inputRef}
             value={renameValue}
             onChange={(e) => setRenameValue(e.target.value)}
             onKeyDown={handleRenameKeyDown}
-            className="form-input flex-1 min-w-0 text-xs py-1 px-2"
+            className="form-input flex-1 min-w-0"
             style={{ fontSize: '0.8rem', padding: '3px 6px' }}
           />
-          <button className="btn-icon" style={{ width: 22, height: 22, padding: 2 }} onClick={handleRenameSubmit}>
+          <button
+            className="btn-icon"
+            style={{ width: 22, height: 22, padding: 2 }}
+            title="Save"
+            onClick={handleRenameSubmit}
+          >
             <Check size={12} />
           </button>
-          <button className="btn-icon" style={{ width: 22, height: 22, padding: 2 }} onClick={() => { setRenameValue(session.title); setIsRenaming(false); }}>
+          <button
+            className="btn-icon"
+            style={{ width: 22, height: 22, padding: 2 }}
+            title="Cancel"
+            onClick={() => { setRenameValue(session.title); setIsRenaming(false); }}
+          >
             <X size={12} />
           </button>
         </div>
       ) : (
         <>
           <MessageSquare size={14} style={{ flexShrink: 0 }} />
-          <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8125rem' }}>
+
+          <span style={{
+            flex: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            fontSize: '0.8125rem',
+          }}>
             {session.title}
           </span>
+
+          {/* Pencil + Trash — slide in on hover */}
           <div
-            ref={menuRef}
-            className="relative"
+            className="opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="btn-icon opacity-0 group-hover:opacity-100 transition-opacity"
+              className="btn-icon"
               style={{ width: 22, height: 22, padding: 2 }}
-              onClick={() => setShowMenu(!showMenu)}
+              title="Rename"
+              onClick={(e) => { e.stopPropagation(); setIsRenaming(true); }}
             >
-              <MoreHorizontal size={13} />
+              <Pencil size={12} />
             </button>
-            <AnimatePresence>
-              {showMenu && (
-                <motion.div
-                  className="context-menu absolute right-0 top-full mt-1 z-50"
-                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                  transition={{ duration: 0.12 }}
-                >
-                  <button
-                    className="context-menu-item w-full"
-                    onClick={() => { setIsRenaming(true); setShowMenu(false); }}
-                  >
-                    <Pencil size={12} /> Rename
-                  </button>
-                  <button
-                    className="context-menu-item danger w-full"
-                    onClick={() => { deleteSession(session.id); setShowMenu(false); }}
-                  >
-                    <Trash2 size={12} /> Delete
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <button
+              className="btn-icon"
+              style={{ width: 22, height: 22, padding: 2, color: 'var(--color-error)' }}
+              title="Delete chat"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              <Trash2 size={12} />
+            </button>
           </div>
         </>
       )}
@@ -190,7 +203,6 @@ export function SessionList({ collapsed }: { collapsed: boolean }) {
   const { sessions, isLoading } = useSessions();
   const { sessionId: activeId } = useParams();
   const { searchQuery } = useSessionStore();
-
 
   const filtered = searchQuery
     ? sessions.filter((s) => s.title.toLowerCase().includes(searchQuery.toLowerCase()))

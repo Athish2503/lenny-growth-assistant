@@ -102,6 +102,7 @@ class ArtifactService:
         artifact_type: str = "html",
         title: Optional[str] = None,
         history: Optional[List[Any]] = None,
+        context_chunks: Optional[List[Any]] = None,
     ) -> Dict[str, Any]:
         """
         Generates a structured artifact (HTML or Markdown) dictionary without rendering.
@@ -113,6 +114,7 @@ class ArtifactService:
             prompt=prompt,
             artifact_type=resolved_type,
             history=history,
+            context_chunks=context_chunks,
         )
 
         if self.llm_service:
@@ -120,15 +122,27 @@ class ArtifactService:
         else:
             content = self._get_fallback_content(prompt, resolved_type, artifact_title)
 
-        # Clean potential markdown fence wrapping from LLM output if type is HTML
-        if resolved_type == "html":
+        # Clean potential conversational preamble or markdown fence wrapping from LLM output for HTML/CSS
+        if resolved_type in ["html", "css"]:
             clean_content = content.strip()
-            if clean_content.startswith("```html"):
-                clean_content = clean_content[7:]
-            elif clean_content.startswith("```"):
-                clean_content = clean_content[3:]
-            if clean_content.endswith("```"):
-                clean_content = clean_content[:-3]
+            if "```html" in clean_content:
+                clean_content = clean_content.split("```html", 1)[1]
+                if "```" in clean_content:
+                    clean_content = clean_content.split("```", 1)[0]
+            elif "```" in clean_content:
+                parts = clean_content.split("```")
+                if len(parts) >= 3:
+                    clean_content = parts[1]
+                    if clean_content.startswith("html"):
+                        clean_content = clean_content[4:]
+            elif "<!DOCTYPE" in clean_content or "<html" in clean_content:
+                start_idx = clean_content.find("<!DOCTYPE")
+                if start_idx == -1:
+                    start_idx = clean_content.find("<html")
+                end_idx = clean_content.rfind("</html>")
+                if start_idx != -1 and end_idx != -1:
+                    clean_content = clean_content[start_idx : end_idx + 7]
+
             content = clean_content.strip()
 
         return {
@@ -142,7 +156,7 @@ class ArtifactService:
                 "service": "ArtifactService",
                 "artifact_type": resolved_type,
                 "frontend_rendered": False,
-                "retrieval_performed": False,
+                "retrieval_performed": bool(context_chunks),
                 "has_artifacts": True,
             },
         }

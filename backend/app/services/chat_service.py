@@ -118,15 +118,38 @@ class ChatService:
         elif intent == IntentType.ARTIFACT:
             msg_lower = message_text.lower()
             art_type = "markdown" if any(w in msg_lower for w in ["markdown", "md", "doc", "gfm"]) else "html"
+            
+            # Retrieve relevant context from database for artifact generation
+            t_ret_start = time.time()
+            context_chunks = await self.retriever.retrieve(query=message_text, top_k=5)
+            retrieval_latency = (time.time() - t_ret_start) * 1000
+
             srv = self.artifact_service or ArtifactService(llm_service=llm_service)
             t_llm_start = time.time()
             if hasattr(srv, "generate_artifact"):
-                res = await srv.generate_artifact(message_text, artifact_type=art_type, history=history)
+                res = await srv.generate_artifact(
+                    message_text,
+                    artifact_type=art_type,
+                    history=history,
+                    context_chunks=context_chunks,
+                )
             else:
                 res = srv.process(message_text, history)
             llm_latency = (time.time() - t_llm_start) * 1000
             content = res.get("content", "")
             message_metadata = res.get("metadata", {})
+            citations = [
+                {
+                    "doc_id": c.doc_id,
+                    "chunk_id": c.chunk_id,
+                    "content": c.content,
+                    "score": c.score,
+                    "metadata": c.metadata,
+                }
+                for c in context_chunks
+            ]
+            message_metadata["sources"] = citations
+            message_metadata["citations"] = citations
 
             actual_art_type = res.get("artifact_type", art_type)
             title = res.get("title") or f"Generated {actual_art_type.upper()} Artifact"

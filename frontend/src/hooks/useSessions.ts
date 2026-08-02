@@ -8,7 +8,7 @@ import type { Session } from '@/types';
 export function useSessions() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { setSessions, addSession, updateSession, removeSession, setActiveSessionId } = useSessionStore();
+  const { setSessions, addSession, updateSession, removeSession, setActiveSessionId, setPendingSessionId } = useSessionStore();
   const { clearMessages } = useChatStore();
 
   const query = useQuery({
@@ -26,6 +26,7 @@ export function useSessions() {
     onSuccess: (session: Session) => {
       addSession(session);
       setActiveSessionId(session.id);
+      setPendingSessionId(session.id);
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       navigate(`/chat/${session.id}`);
     },

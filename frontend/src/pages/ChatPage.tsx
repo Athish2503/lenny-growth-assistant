@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Cpu, ChevronDown } from 'lucide-react';
+import { Brain } from 'lucide-react';
 import { Sidebar } from '@/components/sidebar/Sidebar';
 import { ChatWindow } from '@/components/chat/ChatWindow';
 import { ChatInput } from '@/components/chat/ChatInput';
@@ -9,86 +9,21 @@ import { WelcomeScreen } from '@/components/chat/WelcomeScreen';
 import { ResearchInspector } from '@/components/inspector/ResearchInspector';
 import { ArtifactViewer } from '@/components/artifact/ArtifactViewer';
 import { useChat } from '@/hooks/useChat';
+import { useChatStore } from '@/store/chatStore';
 import { useUIStore } from '@/store/uiStore';
-import { useArtifactStore } from '@/store/artifactStore';
 import { useSessionStore } from '@/store/sessionStore';
-import { useSettings } from '@/hooks/useSettings';
 import { sessionApi } from '@/api/sessionApi';
-
-function ModelSelectorHeader() {
-  const { settings, saveSettings, availableModels } = useSettings();
-  const providerModels = availableModels?.[settings.provider] || [];
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        background: 'var(--color-surface-elevated)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 8,
-        padding: '3px 8px',
-        fontSize: '0.8rem',
-      }}>
-        <Cpu size={13} style={{ color: 'var(--color-accent)' }} />
-        <select
-          value={settings.provider}
-          onChange={(e) => {
-            const p = e.target.value as 'ollama' | 'anthropic' | 'openai';
-            const models = availableModels?.[p] || [];
-            const defModel = models[0] || (p === 'ollama' ? 'mistral:7b' : 'claude-3-5-sonnet-20240620');
-            saveSettings({ provider: p, model: defModel });
-          }}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            color: 'var(--color-text-primary)',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          <option value="ollama">Ollama</option>
-          <option value="anthropic">Anthropic</option>
-          <option value="openai">OpenAI</option>
-        </select>
-        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>/</span>
-        <select
-          value={settings.model}
-          onChange={(e) => saveSettings({ model: e.target.value })}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            color: 'var(--color-text-muted)',
-            fontSize: '0.8rem',
-            cursor: 'pointer',
-            maxWidth: 140,
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {!providerModels.includes(settings.model) && settings.model && (
-            <option value={settings.model}>{settings.model}</option>
-          )}
-          {providerModels.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
-  );
-}
 
 export function ChatPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { messages, isLoading, isStreaming, sendMessage, stopStreaming, error } = useChat(sessionId);
   const { toggleInspector, inspectorOpen } = useUIStore();
-  const { setActiveSessionId, addSession } = useSessionStore();
+  const { setActiveSessionId, addSession, pendingSessionId, setPendingSessionId, removeSession } = useSessionStore();
+
+  // Keep a stable ref to sessionId for cleanup effects
+  const sessionIdRef = useRef(sessionId);
+  sessionIdRef.current = sessionId;
 
   // Sync active session inside useEffect to prevent render-phase state updates
   useEffect(() => {
@@ -96,6 +31,27 @@ export function ChatPage() {
       setActiveSessionId(sessionId);
     }
   }, [sessionId, setActiveSessionId]);
+
+  // Auto-delete a pending (empty) session when the user navigates away without typing anything
+  useEffect(() => {
+    return () => {
+      const leavingSessionId = sessionIdRef.current;
+      const { pendingSessionId: pending, removeSession: removeSess, setPendingSessionId: clearPending } =
+        useSessionStore.getState();
+
+      if (pending && pending === leavingSessionId) {
+        const msgs = useChatStore.getState().messagesBySession[pending] || [];
+        if (msgs.length === 0) {
+          // Silently delete the empty session from backend + store
+          sessionApi.delete(pending).catch(() => {});
+          removeSess(pending);
+          clearPending(null);
+        }
+      }
+    };
+  // Only re-run when sessionId changes (mounting a new chat route)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   const handleSend = async (msg: string) => {
     let activeId = sessionId;
@@ -111,6 +67,9 @@ export function ChatPage() {
         console.error('Failed to create session:', err);
         return;
       }
+    } else if (pendingSessionId === activeId) {
+      // First message sent in this session — it's no longer pending/empty
+      setPendingSessionId(null);
     }
     sendMessage(msg, activeId);
   };
@@ -125,17 +84,17 @@ export function ChatPage() {
       overflow: 'hidden',
       minWidth: 0,
     }}>
-      {/* Top bar */}
+      {/* Top bar — minimal, just inspector toggle */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '8px 16px',
+        justifyContent: 'flex-end',
+        padding: '6px 12px',
         borderBottom: '1px solid var(--color-border-subtle)',
         gap: 8,
         flexShrink: 0,
+        minHeight: 40,
       }}>
-        <ModelSelectorHeader />
         <button
           className="btn-icon"
           onClick={toggleInspector}

@@ -1,6 +1,8 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Square, Paperclip } from 'lucide-react';
+import { ModelSelectorInline } from '@/components/ui/ModelSelectorInline';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -56,14 +58,16 @@ export function ChatInput({ onSend, isStreaming, onStop, disabled, placeholder }
           aria-label="Chat message input"
         />
 
-        {/* Bottom row: attach + char count + send */}
+        {/* Bottom toolbar row */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 10px 10px',
+          padding: '4px 10px 10px',
+          gap: 8,
         }}>
-          <div style={{ display: 'flex', gap: 4 }}>
+          {/* Left: Attach + Model Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button
               className="btn-icon"
               disabled
@@ -72,17 +76,17 @@ export function ChatInput({ onSend, isStreaming, onStop, disabled, placeholder }
             >
               <Paperclip size={15} />
             </button>
+            <ModelSelectorInline />
           </div>
 
+          {/* Right: Theme Toggle + char count hint + Send */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ThemeToggle />
             {value.length > 100 && (
               <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                 {value.length}
               </span>
             )}
-            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-              Shift+Enter for newline
-            </span>
             {isStreaming ? (
               <motion.button
                 className="btn-send"
