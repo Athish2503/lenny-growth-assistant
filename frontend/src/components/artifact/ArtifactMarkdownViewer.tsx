@@ -5,6 +5,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
 import mermaid from 'mermaid';
+import { Info, Lightbulb, Key, AlertTriangle, AlertOctagon } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import type { Artifact } from '@/types';
 
@@ -49,12 +50,12 @@ function MermaidDiagram({ code }: { code: string }) {
 
 // Custom Callout Box Component
 function CalloutBlock({ type, children }: { type: string; children: React.ReactNode }) {
-  const styles: Record<string, { bg: string; border: string; text: string; icon: string; title: string }> = {
-    NOTE: { bg: 'rgba(59, 130, 246, 0.08)', border: 'rgba(59, 130, 246, 0.3)', text: '#60a5fa', icon: 'ℹ️', title: 'Note' },
-    TIP: { bg: 'rgba(16, 185, 129, 0.08)', border: 'rgba(16, 185, 129, 0.3)', text: '#34d399', icon: '💡', title: 'Tip' },
-    IMPORTANT: { bg: 'rgba(168, 85, 247, 0.08)', border: 'rgba(168, 85, 247, 0.3)', text: '#c084fc', icon: '🔑', title: 'Important' },
-    WARNING: { bg: 'rgba(245, 158, 11, 0.08)', border: 'rgba(245, 158, 11, 0.3)', text: '#fbbf24', icon: '⚠️', title: 'Warning' },
-    CAUTION: { bg: 'rgba(239, 68, 68, 0.08)', border: 'rgba(239, 68, 68, 0.3)', text: '#f87171', icon: '🚨', title: 'Caution' },
+  const styles: Record<string, { bg: string; border: string; text: string; icon: React.ReactNode; title: string }> = {
+    NOTE: { bg: 'rgba(59, 130, 246, 0.08)', border: 'rgba(59, 130, 246, 0.3)', text: '#60a5fa', icon: <Info size={14} />, title: 'Note' },
+    TIP: { bg: 'rgba(16, 185, 129, 0.08)', border: 'rgba(16, 185, 129, 0.3)', text: '#34d399', icon: <Lightbulb size={14} />, title: 'Tip' },
+    IMPORTANT: { bg: 'rgba(168, 85, 247, 0.08)', border: 'rgba(168, 85, 247, 0.3)', text: '#c084fc', icon: <Key size={14} />, title: 'Important' },
+    WARNING: { bg: 'rgba(245, 158, 11, 0.08)', border: 'rgba(245, 158, 11, 0.3)', text: '#fbbf24', icon: <AlertTriangle size={14} />, title: 'Warning' },
+    CAUTION: { bg: 'rgba(239, 68, 68, 0.08)', border: 'rgba(239, 68, 68, 0.3)', text: '#f87171', icon: <AlertOctagon size={14} />, title: 'Caution' },
   };
 
   const cfg = styles[type.toUpperCase()] || styles.NOTE;

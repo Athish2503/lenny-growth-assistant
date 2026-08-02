@@ -41,6 +41,9 @@ export interface Citation {
   snippet: string;
   relevance_score: number;
   chunk_index?: number;
+  guest?: string;
+  episode_title?: string;
+  youtube_url?: string;
 }
 
 export interface MessageMetadata {

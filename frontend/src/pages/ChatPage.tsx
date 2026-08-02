@@ -115,7 +115,7 @@ export function ChatPage() {
     sendMessage(msg, activeId);
   };
 
-  const showWelcome = !sessionId && messages.length === 0 && !isStreaming;
+  const showWelcome = messages.length === 0 && !isStreaming;
 
   return (
     <div style={{

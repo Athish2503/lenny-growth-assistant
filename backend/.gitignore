@@ -2,3 +2,5 @@
 .venv
 
 backend/chroma_db/
+
+chroma_db

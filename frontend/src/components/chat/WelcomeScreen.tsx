@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Zap, TrendingUp, BookOpen, BarChart3, PenLine } from 'lucide-react';
+import { Zap, TrendingUp, BookOpen, BarChart3, PenLine, Sparkles } from 'lucide-react';
 
 interface QuickPrompt {
   icon: React.ReactNode;
@@ -52,6 +52,22 @@ export function WelcomeScreen({ onPromptClick }: WelcomeScreenProps) {
         transition={{ duration: 0.4, ease: 'easeOut' }}
         style={{ textAlign: 'center' }}
       >
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '4px 12px',
+          borderRadius: 20,
+          background: 'rgba(59, 130, 246, 0.12)',
+          border: '1px solid rgba(59, 130, 246, 0.3)',
+          color: '#60a5fa',
+          fontSize: '0.78rem',
+          fontWeight: 600,
+          marginBottom: 16,
+        }}>
+          <Sparkles size={12} style={{ color: '#60a5fa' }} />
+          <span>New Chat Session</span>
+        </div>
         <div style={{
           width: 56,
           height: 56,

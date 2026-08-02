@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { useState } from 'react';
-import { Copy, Check, RotateCcw, ExternalLink, FileText } from 'lucide-react';
+import { Copy, Check, RotateCcw, ExternalLink, FileText, Database, Search, PenTool, FileCode } from 'lucide-react';
 import type { Message } from '@/types';
 import { CitationChip } from './CitationChip';
 import { useArtifactStore } from '@/store/artifactStore';
@@ -74,10 +74,10 @@ function AssistantMessage({ message, isLast }: { message: Message; isLast?: bool
         {/* Intent badge */}
         {message.metadata?.intent && (
           <div style={{ marginBottom: 8 }}>
-            <span className={`badge ${message.metadata.intent === 'essay' ? 'badge-blue' : 'badge-gray'}`}>
-              {message.metadata.intent === 'qa' && '🔍 Researched'}
-              {message.metadata.intent === 'essay' && '✍️ Essay'}
-              {message.metadata.intent === 'artifact' && '📄 Artifact'}
+            <span className={`badge ${message.metadata.intent === 'essay' ? 'badge-blue' : 'badge-gray'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              {message.metadata.intent === 'qa' && <><Search size={11} /> Researched</>}
+              {message.metadata.intent === 'essay' && <><PenTool size={11} /> Essay</>}
+              {message.metadata.intent === 'artifact' && <><FileCode size={11} /> Artifact</>}
             </span>
           </div>
         )}
@@ -177,12 +177,27 @@ function AssistantMessage({ message, isLast }: { message: Message; isLast?: bool
           </div>
         )}
 
-        {/* Citations */}
+        {/* Knowledge Base Citations */}
         {citations.length > 0 && !message.is_streaming && (
-          <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {citations.map((cite) => (
-              <CitationChip key={cite.id} citation={cite} />
-            ))}
+          <div style={{
+            marginTop: 14,
+            padding: '10px 14px',
+            borderRadius: 12,
+            background: 'rgba(59, 130, 246, 0.05)',
+            border: '1px solid rgba(59, 130, 246, 0.18)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-accent)' }}>
+              <Database size={13} />
+              <span>Retrieved Knowledge Base Sources ({citations.length})</span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {citations.map((cite) => (
+                <CitationChip key={cite.id} citation={cite} />
+              ))}
+            </div>
           </div>
         )}
 

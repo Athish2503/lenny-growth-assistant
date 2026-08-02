@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronRight, Brain, Clock, Database, TrendingUp, Cpu } from 'lucide-react';
+import { X, ChevronRight, Brain, Clock, Database, TrendingUp, Cpu, FileText, Globe, Palette } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useChatStore } from '@/store/chatStore';
 import { useArtifactStore } from '@/store/artifactStore';
@@ -304,11 +304,8 @@ export function ResearchInspector() {
                       onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--color-accent-border)')}
                       onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--color-border)')}
                     >
-                      <div style={{
-                        fontSize: '1rem',
-                        flexShrink: 0,
-                      }}>
-                        {artifact.artifact_type === 'markdown' ? '📄' : artifact.artifact_type === 'html' ? '🌐' : '🎨'}
+                      <div style={{ flexShrink: 0, color: 'var(--color-accent)' }}>
+                        {artifact.artifact_type === 'markdown' ? <FileText size={16} /> : artifact.artifact_type === 'html' ? <Globe size={16} /> : <Palette size={16} />}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
