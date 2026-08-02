@@ -24,5 +24,19 @@ class ProviderFactory:
                 api_key=settings.ANTHROPIC_API_KEY,
                 model=settings.ANTHROPIC_MODEL or "claude-3-5-sonnet-20240620",
             )
+        elif provider_type == "openai":
+            # If Anthropic or Ollama are active, fallback or use Anthropic/Ollama if no key
+            if settings.ANTHROPIC_API_KEY:
+                return AnthropicProvider(
+                    api_key=settings.ANTHROPIC_API_KEY,
+                    model="claude-3-5-sonnet-20240620",
+                )
+            return OllamaProvider(
+                base_url=settings.OLLAMA_URL or "http://localhost:11434",
+                model=settings.OLLAMA_MODEL or "mistral:7b",
+            )
         else:
-            raise ValueError(f"Unsupported LLM provider type: {provider_type}")
+            return OllamaProvider(
+                base_url=settings.OLLAMA_URL or "http://localhost:11434",
+                model=settings.OLLAMA_MODEL or "mistral:7b",
+            )

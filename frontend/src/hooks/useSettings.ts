@@ -23,6 +23,12 @@ export function useSettings() {
     },
   });
 
+  const modelsQuery = useQuery({
+    queryKey: ['availableModels'],
+    queryFn: settingsApi.getAvailableModels,
+    staleTime: 30000,
+  });
+
   const saveSettings = (partial: Partial<Settings>) => {
     updateSettings(partial);
     mutation.mutate(partial);
@@ -33,5 +39,12 @@ export function useSettings() {
     isLoading: query.isLoading,
     isSaving: mutation.isPending,
     saveSettings,
+    availableModels: modelsQuery.data || {
+      ollama: ['mistral:7b', 'gemma4:latest', 'qwen2.5-coder:7b'],
+      anthropic: ['claude-3-5-sonnet-20240620', 'claude-3-opus-20240229'],
+      openai: ['gpt-4o', 'gpt-4o-mini'],
+      current_provider: settings.provider,
+      current_model: settings.model,
+    },
   };
 }

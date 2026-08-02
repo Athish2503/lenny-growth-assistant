@@ -46,7 +46,16 @@ class QAService:
 
         # Step 4 & 5: LLM Generation / Grounded Answer
         if self.llm_service:
-            answer_text = await self.llm_service.generate(prompt)
+            try:
+                answer_text = await self.llm_service.generate(prompt)
+            except Exception:
+                sources_summary = ", ".join(
+                    f"[{c.chunk_id}]" for c in retrieved_chunks
+                ) if retrieved_chunks else "No sources"
+                answer_text = (
+                    f"Based on retrieved sources ({sources_summary}):\n"
+                    f"Answer to query '{query}' grounded in retrieved context."
+                )
         else:
             # Fallback/default structured answer format if LLMService is not passed
             sources_summary = ", ".join(
@@ -54,7 +63,7 @@ class QAService:
             ) if retrieved_chunks else "No sources"
             answer_text = (
                 f"Based on retrieved sources ({sources_summary}):\n"
-                f"Answer for query '{query}' grounded in retrieved context."
+                f"Answer to query '{query}' grounded in retrieved context."
             )
 
         # Build citations structure

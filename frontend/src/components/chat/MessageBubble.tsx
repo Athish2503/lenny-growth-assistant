@@ -3,9 +3,10 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { useState } from 'react';
-import { Copy, Check, RotateCcw, ExternalLink } from 'lucide-react';
+import { Copy, Check, RotateCcw, ExternalLink, FileText } from 'lucide-react';
 import type { Message } from '@/types';
 import { CitationChip } from './CitationChip';
+import { useArtifactStore } from '@/store/artifactStore';
 
 interface MessageBubbleProps {
   message: Message;
@@ -123,6 +124,56 @@ function AssistantMessage({ message, isLast }: { message: Message; isLast?: bool
             >
               {message.content}
             </ReactMarkdown>
+          </div>
+        )}
+
+        {/* Artifact Card */}
+        {message.metadata?.artifact && !message.is_streaming && (
+          <div
+            onClick={() => {
+              const art = message.metadata?.artifact;
+              if (art) {
+                useArtifactStore.getState().setCurrentArtifact(art);
+                useArtifactStore.getState().setActiveTab('preview');
+              }
+            }}
+            style={{
+              marginTop: 12,
+              padding: '10px 14px',
+              borderRadius: 8,
+              background: 'var(--color-surface-elevated)',
+              border: '1px solid var(--color-border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            className="artifact-card-hover"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 32,
+                height: 32,
+                borderRadius: 6,
+                background: 'rgba(59, 130, 246, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--color-accent)',
+              }}>
+                <FileText size={18} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  {message.metadata.artifact.title || 'Generated Artifact'}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                  Click to open side-by-side artifact viewer
+                </div>
+              </div>
+            </div>
+            <ExternalLink size={16} style={{ color: 'var(--color-accent)' }} />
           </div>
         )}
 

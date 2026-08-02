@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Toggle mock mode — set VITE_USE_MOCK=true in .env to use mock data
-export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
+export const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 

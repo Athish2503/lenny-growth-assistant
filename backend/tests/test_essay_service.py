@@ -13,8 +13,7 @@ def test_build_essay_prompt():
     assert "Product Strategy" in prompt
     assert "User: How do I define product strategy?" in prompt
     assert "SHIP30 ESSAY WRITING RULES" in prompt
-    assert "Do NOT perform web searches or document retrieval" in prompt
-    assert "Do NOT create external artifacts or files" in prompt
+    assert "1250 words" in prompt
 
 
 @pytest.mark.anyio

@@ -12,10 +12,26 @@ import type { Artifact, ViewTab } from '@/types';
 function ArtifactPreview({ artifact }: { artifact: Artifact }) {
   if (artifact.artifact_type === 'html') {
     const srcDoc = `
-      <style>
-        body { margin: 0; background: transparent; }
-      </style>
-      ${artifact.content}
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          * { box-sizing: border-box; }
+          body {
+            margin: 0;
+            padding: 24px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #ffffff;
+            color: #0f172a;
+            line-height: 1.6;
+          }
+        </style>
+      </head>
+      <body>
+        ${artifact.content}
+      </body>
+      </html>
     `;
     return (
       <iframe
@@ -35,18 +51,26 @@ function ArtifactPreview({ artifact }: { artifact: Artifact }) {
           border: '1px solid var(--color-border)',
           borderRadius: 8,
           padding: '10px 14px',
-          marginBottom: 12,
+          marginBottom: 16,
           display: 'flex',
           alignItems: 'center',
           gap: 8,
         }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-            CSS Preview — styles are applied below
+            🎨 Live CSS Preview — Styles applied to target preview container below
           </span>
         </div>
         <style>{artifact.content}</style>
-        <div className="prose" style={{ fontSize: '0.875rem' }}>
-          <p>CSS stylesheet loaded. Preview shows raw styles applied to this container.</p>
+        <div className="artifact-container" style={{ padding: 20, border: '1px dashed var(--color-border)', borderRadius: 8 }}>
+          <header>
+            <h1 style={{ fontSize: '1.25rem', marginBottom: 8 }}>{artifact.title}</h1>
+          </header>
+          <main>
+            <p>Live component preview for generated CSS stylesheet.</p>
+            <button style={{ padding: '8px 16px', borderRadius: 6, cursor: 'pointer', marginTop: 12 }}>
+              Action Button
+            </button>
+          </main>
         </div>
       </div>
     );

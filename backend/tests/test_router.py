@@ -32,6 +32,7 @@ def test_classify_intent_essay(router):
     assert router.classify_intent("/essay Write about growth strategies") == IntentType.ESSAY
     assert router.classify_intent("Please write an essay on user retention") == IntentType.ESSAY
     assert router.classify_intent("Can you draft essay for product launch?") == IntentType.ESSAY
+    assert router.classify_intent("Write a ship30 essay about product-led growth") == IntentType.ESSAY
 
 
 def test_classify_intent_artifact(router):
@@ -39,6 +40,8 @@ def test_classify_intent_artifact(router):
     assert router.classify_intent("Please generate artifact for onboarding") == IntentType.ARTIFACT
     assert router.classify_intent("create artifact layout") == IntentType.ARTIFACT
     assert router.classify_intent("build artifact standard") == IntentType.ARTIFACT
+    assert router.classify_intent("Create an artifact based on the chat we had") == IntentType.ARTIFACT
+    assert router.classify_intent("Make an artifact summarizing key points") == IntentType.ARTIFACT
 
 
 def test_get_service_returns_appropriate_service(router):

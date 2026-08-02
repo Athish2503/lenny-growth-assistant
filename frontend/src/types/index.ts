@@ -51,6 +51,7 @@ export interface MessageMetadata {
   is_essay?: boolean;
   artifact_type?: ArtifactType;
   artifact_id?: string;
+  artifact?: Artifact;
   sources?: Citation[];
   retrieval_time_ms?: number;
   confidence_score?: number;

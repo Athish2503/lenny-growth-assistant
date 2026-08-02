@@ -14,7 +14,7 @@ def test_build_artifact_prompt():
     assert "Create landing page header" in prompt
     assert "ARTIFACT TYPE: html" in prompt
     assert "User: Need HTML code" in prompt
-    assert "Do NOT attempt to render the frontend output" in prompt
+    assert "RULES:" in prompt
 
 
 @pytest.mark.anyio

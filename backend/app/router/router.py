@@ -29,12 +29,26 @@ class IntentRouter:
         Classify input message into an intent deterministically without calling LLMs.
         """
         content = message.strip().lower()
-        if content.startswith("/essay") or "write an essay" in content or "essay on" in content or "draft essay" in content:
+
+        # Check Essay intents
+        essay_keywords = [
+            "/essay", "write an essay", "essay on", "draft essay", "ship30", "ship 30",
+            "atomic essay", "essay format", "essay about"
+        ]
+        if any(kw in content for kw in essay_keywords):
             return IntentType.ESSAY
-        elif content.startswith("/artifact") or "generate artifact" in content or "create artifact" in content or "build artifact" in content:
+
+        # Check Artifact intents
+        artifact_keywords = [
+            "/artifact", "generate artifact", "create artifact", "build artifact",
+            "make artifact", "create an artifact", "generate an artifact", "make an artifact",
+            "build an artifact", "render artifact", "show artifact", "artifact viewer",
+            "html snippet", "css snippet", "markdown document"
+        ]
+        if any(kw in content for kw in artifact_keywords):
             return IntentType.ARTIFACT
-        else:
-            return IntentType.QA
+
+        return IntentType.QA
 
     def route(self, message: str, history: Optional[List[Message]] = None) -> IntentType:
         """

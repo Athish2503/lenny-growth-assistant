@@ -26,5 +26,25 @@ export const settingsApi = {
     const res = await apiClient.put<Settings>('/settings', settings);
     return res.data;
   },
+
+  getAvailableModels: async (): Promise<{
+    ollama: string[];
+    anthropic: string[];
+    openai: string[];
+    current_provider: string;
+    current_model: string;
+  }> => {
+    if (USE_MOCK) {
+      return {
+        ollama: ['mistral:7b', 'gemma4:latest', 'qwen2.5-coder:7b'],
+        anthropic: ['claude-3-5-sonnet-20240620', 'claude-3-opus-20240229'],
+        openai: ['gpt-4o', 'gpt-4o-mini'],
+        current_provider: 'ollama',
+        current_model: 'mistral:7b',
+      };
+    }
+    const res = await apiClient.get('/settings/models');
+    return res.data;
+  },
 };
 

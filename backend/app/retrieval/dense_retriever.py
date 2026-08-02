@@ -1,3 +1,4 @@
+import asyncio
 from typing import List, Optional
 from app.retrieval.base import BaseRetriever
 from app.retrieval.models import RetrievalResult
@@ -30,10 +31,14 @@ class DenseRetriever(BaseRetriever):
 
         # 2. Query ChromaDB collection
         collection = await self.vector_store.get_collection()
-        chroma_response = await collection.query(
-            query_embeddings=[query_embedding],
-            n_results=top_k,
-            include=["documents", "metadatas", "distances"],
+        loop = asyncio.get_running_loop()
+        chroma_response = await loop.run_in_executor(
+            None,
+            lambda: collection.query(
+                query_embeddings=[query_embedding],
+                n_results=top_k,
+                include=["documents", "metadatas", "distances"],
+            ),
         )
 
         results: List[RetrievalResult] = []

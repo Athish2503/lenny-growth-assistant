@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
-from app.database.models import Session
+from app.database.models import Session, User
 
 
 class SessionRepository:
@@ -15,6 +15,18 @@ class SessionRepository:
         self.db = db
 
     def create(self, user_id: UUID, title: Optional[str] = None) -> Session:
+        # Guarantee user exists in database to satisfy FK constraint
+        stmt = select(User).where(User.id == user_id)
+        user = self.db.scalars(stmt).first()
+        if not user:
+            user = User(
+                id=user_id,
+                email=f"user_{str(user_id)[:8]}@lenny.ai",
+                full_name="Growth Analyst User"
+            )
+            self.db.add(user)
+            self.db.commit()
+
         session = Session(user_id=user_id, title=title)
         self.db.add(session)
         self.db.commit()

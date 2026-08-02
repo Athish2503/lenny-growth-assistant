@@ -6,6 +6,7 @@ import {
 import { useSessions } from '@/hooks/useSessions';
 import { useUIStore } from '@/store/uiStore';
 import { useSessionStore } from '@/store/sessionStore';
+import { useSettings } from '@/hooks/useSettings';
 import { SessionList } from './SessionList';
 
 interface SidebarProps {
@@ -18,6 +19,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
   const { searchQuery, setSearchQuery } = useSessionStore();
   const { createSession, isCreating } = useSessions();
+  const { settings } = useSettings();
 
   const isSettingsActive = location.pathname === '/settings';
 
@@ -194,13 +196,13 @@ export function Sidebar({ className = '' }: SidebarProps) {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  Growth Analyst
+                  {settings.provider === 'ollama' ? 'Ollama (Local)' : settings.provider === 'anthropic' ? 'Anthropic' : 'OpenAI'}
                 </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                  claude-3-5-sonnet
+                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {settings.model || 'mistral:7b'}
                 </div>
               </div>
-              <div className="badge badge-green" style={{ fontSize: '0.65rem', padding: '1px 5px' }}>Live</div>
+              <div className="badge badge-green" style={{ fontSize: '0.65rem', padding: '1px 5px' }}>Active</div>
             </motion.div>
           </AnimatePresence>
         )}

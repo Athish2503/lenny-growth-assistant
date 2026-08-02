@@ -21,7 +21,7 @@ class OllamaProvider(BaseProvider):
             "stream": False,
             **kwargs,
         }
-        async with httpx.AsyncClient(base_url=self.base_url) as client:
+        async with httpx.AsyncClient(base_url=self.base_url, timeout=60.0) as client:
             response = await client.post("/api/generate", json=payload)
             response.raise_for_status()
             data = response.json()
@@ -34,7 +34,7 @@ class OllamaProvider(BaseProvider):
             "stream": True,
             **kwargs,
         }
-        async with httpx.AsyncClient(base_url=self.base_url) as client:
+        async with httpx.AsyncClient(base_url=self.base_url, timeout=60.0) as client:
             async with client.stream("POST", "/api/generate", json=payload) as response:
                 response.raise_for_status()
                 async for line in response.aiter_lines():

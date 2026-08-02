@@ -18,11 +18,12 @@ USER REQUEST:
 ARTIFACT TYPE: {artifact_type}
 
 RULES:
-1. Provide valid, standard {artifact_type} content without conversational preamble or markdown codeblock wrappers if raw output is required, or well-structured clean code.
-2. For 'markdown': Use clean GFM syntax with headers, lists, bold text, and tables where applicable.
-3. For 'html': Use clean semantic HTML5 markup (e.g. standard tags, accessible elements). Do NOT include external script dependencies unless requested.
-4. For 'css': Provide clean CSS rulesets with modern layout techniques (Flexbox/Grid), custom variables, and responsive design properties.
-5. Do NOT attempt to render the frontend output. Return only the structured artifact definition and code content.
+1. If the request asks for an artifact based on the conversation history, synthesize all relevant insights, frameworks, key points, and summaries from the chat history into a complete, high-quality {artifact_type} document or component.
+2. Provide valid, standard {artifact_type} content cleanly formatted.
+3. For 'markdown': Use GitHub Flavored Markdown (GFM) with structured headers, bullet points, bold key terms, tables, and callout boxes.
+4. For 'html': Use semantic HTML5 markup with clean embedded inline CSS/styling or modern flexbox/grid layout so it renders beautifully in an iframe.
+5. For 'css': Provide modular CSS rulesets with custom CSS properties, flexbox/grid styles, and responsive classes.
+6. Return the raw content directly without conversational preamble.
 
 Generate the complete {artifact_type} artifact content now:"""
 

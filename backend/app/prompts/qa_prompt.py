@@ -33,9 +33,8 @@ INSTRUCTIONS:
 1. Provide a concise, clear, and direct answer to the question.
 2. Ground all claims in the provided context sources.
 3. Cite sources inline or at the end of statements using source identifiers (e.g., [Source 1], [chunk_id], or source titles).
-4. Do NOT generate long essays, unstructured narratives, or ungrounded speculation.
-5. Do NOT create external artifacts.
-6. If the context does not contain enough information to answer the question, state that clearly.
+4. Ground all claims in the provided context sources without ungrounded speculation.
+5. If the context does not contain enough information to answer the question, state that clearly.
 
 CONTEXT SOURCES:
 {context_str}

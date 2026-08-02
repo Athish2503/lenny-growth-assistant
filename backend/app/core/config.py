@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     # Model & provider configuration
     MODEL_PROVIDER: str = "ollama"
     OLLAMA_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "llama3"
+    OLLAMA_MODEL: str = "mistral:7b"
     ANTHROPIC_API_KEY: Optional[str] = None
     ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20240620"
     EMBEDDING_MODEL: Optional[str] = "all-MiniLM-L6-v2"

@@ -31,6 +31,12 @@ class EmbeddingService:
         results = await self.embed_documents([text])
         return results[0]
 
+    async def embed_query(self, text: str) -> List[float]:
+        """
+        Generate embedding vector for a single query string asynchronously.
+        """
+        return await self.embed_text(text)
+
     async def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """
         Generate embedding vectors for a list of strings asynchronously.

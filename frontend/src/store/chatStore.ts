@@ -42,7 +42,12 @@ export const useChatStore = create<ChatState>((set) => ({
       const msgs = s.messagesBySession[sessionId] || [];
       if (msgs.length === 0) return s;
       const updated = [...msgs];
-      updated[updated.length - 1] = { ...updated[updated.length - 1], content };
+      const streamingIdx = updated.findLastIndex((m) => m.is_streaming || m.role === 'assistant');
+      if (streamingIdx !== -1) {
+        updated[streamingIdx] = { ...updated[streamingIdx], content };
+      } else {
+        updated[updated.length - 1] = { ...updated[updated.length - 1], content };
+      }
       return {
         messagesBySession: { ...s.messagesBySession, [sessionId]: updated },
       };
@@ -52,10 +57,11 @@ export const useChatStore = create<ChatState>((set) => ({
     set((s) => {
       const msgs = s.messagesBySession[sessionId] || [];
       const updated = [...msgs];
-      if (updated.length > 0 && updated[updated.length - 1].is_streaming) {
-        updated[updated.length - 1] = message;
+      const streamingIdx = updated.findIndex((m) => m.is_streaming);
+      if (streamingIdx !== -1) {
+        updated[streamingIdx] = { ...message, is_streaming: false };
       } else {
-        updated.push(message);
+        updated.push({ ...message, is_streaming: false });
       }
       return {
         messagesBySession: { ...s.messagesBySession, [sessionId]: updated },

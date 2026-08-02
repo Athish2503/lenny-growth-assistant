@@ -14,7 +14,10 @@ function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }
 
 export function SettingsPage() {
   const navigate = useNavigate();
-  const { settings, saveSettings, isSaving } = useSettings();
+  const { settings, saveSettings, isSaving, availableModels } = useSettings();
+
+  const providerModels = availableModels?.[settings.provider] || [];
+  const currentModelInList = providerModels.includes(settings.model);
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -101,10 +104,15 @@ export function SettingsPage() {
               <select
                 className="form-select"
                 value={settings.provider}
-                onChange={(e) => saveSettings({ provider: e.target.value as 'anthropic' | 'ollama' | 'openai' })}
+                onChange={(e) => {
+                  const newProvider = e.target.value as 'anthropic' | 'ollama' | 'openai';
+                  const models = availableModels?.[newProvider] || [];
+                  const defaultModel = models[0] || (newProvider === 'ollama' ? 'mistral:7b' : 'claude-3-5-sonnet-20240620');
+                  saveSettings({ provider: newProvider, model: defaultModel });
+                }}
               >
-                <option value="anthropic">Anthropic (Claude)</option>
                 <option value="ollama">Ollama (Local)</option>
+                <option value="anthropic">Anthropic (Claude)</option>
                 <option value="openai">OpenAI</option>
               </select>
             </div>
@@ -118,28 +126,14 @@ export function SettingsPage() {
                 value={settings.model}
                 onChange={(e) => saveSettings({ model: e.target.value })}
               >
-                {settings.provider === 'anthropic' && (
-                  <>
-                    <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet</option>
-                    <option value="claude-3-opus-20240229">claude-3-opus</option>
-                    <option value="claude-3-haiku-20240307">claude-3-haiku</option>
-                  </>
+                {!currentModelInList && settings.model && (
+                  <option value={settings.model}>{settings.model}</option>
                 )}
-                {settings.provider === 'ollama' && (
-                  <>
-                    <option value="llama3.2">llama3.2</option>
-                    <option value="mistral">mistral</option>
-                    <option value="gemma2">gemma2</option>
-                    <option value="qwen2.5">qwen2.5</option>
-                  </>
-                )}
-                {settings.provider === 'openai' && (
-                  <>
-                    <option value="gpt-4o">gpt-4o</option>
-                    <option value="gpt-4o-mini">gpt-4o-mini</option>
-                    <option value="gpt-4-turbo">gpt-4-turbo</option>
-                  </>
-                )}
+                {providerModels.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
               </select>
             </div>
           </motion.div>
