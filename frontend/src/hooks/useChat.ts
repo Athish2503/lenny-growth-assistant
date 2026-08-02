@@ -193,6 +193,10 @@ export function useChat(sessionId: string | undefined) {
                     accumulatedText += event.content;
                     setStreamingContent(accumulatedText);
                     useChatStore.getState().updateLastMessage(activeId, accumulatedText);
+                  } else if (event.type === 'artifact') {
+                    artifactObj = event;
+                    setCurrentArtifact(event as Artifact);
+                    setActiveTab('preview');
                   } else if (event.type === 'done') {
                     finalAssistantMessage = event.response_message;
                     if (event.artifact) {

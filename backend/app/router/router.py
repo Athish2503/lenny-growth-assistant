@@ -43,7 +43,12 @@ class IntentRouter:
             "/artifact", "generate artifact", "create artifact", "build artifact",
             "make artifact", "create an artifact", "generate an artifact", "make an artifact",
             "build an artifact", "render artifact", "show artifact", "artifact viewer",
-            "html snippet", "css snippet", "markdown document"
+            "html snippet", "css snippet", "markdown document",
+            "landing page", "dashboard", "email template", "wireframe", "roadmap",
+            "ui component", "component", "resume", "report", "chart", "mermaid",
+            "diagram", "html page", "html document", "web page", "newsletter",
+            "architecture diagram", "flowchart", "flow chart", "sequence diagram",
+            "mockup", "ui layout", "interactive app", "design system"
         ]
         if any(kw in content for kw in artifact_keywords):
             return IntentType.ARTIFACT

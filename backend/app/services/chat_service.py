@@ -116,7 +116,8 @@ class ChatService:
             message_metadata = res.get("metadata", {})
 
         elif intent == IntentType.ARTIFACT:
-            art_type = "html" if "html" in message_text.lower() else "css" if "css" in message_text.lower() else "markdown"
+            msg_lower = message_text.lower()
+            art_type = "markdown" if any(w in msg_lower for w in ["markdown", "md", "doc", "gfm"]) else "html"
             srv = self.artifact_service or ArtifactService(llm_service=llm_service)
             t_llm_start = time.time()
             if hasattr(srv, "generate_artifact"):
@@ -127,18 +128,20 @@ class ChatService:
             content = res.get("content", "")
             message_metadata = res.get("metadata", {})
 
-            # Create artifact in DB
-            title = res.get("title") or f"Generated {art_type.upper()} Artifact"
+            actual_art_type = res.get("artifact_type", art_type)
+            title = res.get("title") or f"Generated {actual_art_type.upper()} Artifact"
             db_artifact = self.artifact_repo.create_artifact(
                 session_id=session_id,
                 title=title,
-                artifact_type=art_type,
+                artifact_type=actual_art_type,
                 content=content,
             )
             artifact_data = {
+                "type": "artifact",
                 "id": str(db_artifact.id),
                 "title": db_artifact.title,
                 "artifact_type": db_artifact.artifact_type,
+                "language": db_artifact.artifact_type,
                 "content": db_artifact.content,
                 "version": db_artifact.version,
             }
@@ -255,7 +258,8 @@ class ChatService:
         elif intent == IntentType.ESSAY:
             prompt = build_essay_prompt(topic=message_text, history=history)
         else: # ARTIFACT
-            art_type = "html" if "html" in message_text.lower() else "css" if "css" in message_text.lower() else "markdown"
+            msg_lower = message_text.lower()
+            art_type = "markdown" if any(w in msg_lower for w in ["markdown", "md", "doc", "gfm"]) else "html"
             prompt = build_artifact_prompt(prompt=message_text, artifact_type=art_type, history=history)
 
         # Emit initial metadata event
@@ -289,17 +293,30 @@ class ChatService:
 
         artifact_data = None
         if intent == IntentType.ARTIFACT:
-            art_type = "html" if "html" in message_text.lower() else "css" if "css" in message_text.lower() else "markdown"
+            msg_lower = message_text.lower()
+            art_type = "markdown" if any(w in msg_lower for w in ["markdown", "md", "doc", "gfm"]) else "html"
+            clean_content = full_content.strip()
+            if art_type == "html":
+                if clean_content.startswith("```html"):
+                    clean_content = clean_content[7:]
+                elif clean_content.startswith("```"):
+                    clean_content = clean_content[3:]
+                if clean_content.endswith("```"):
+                    clean_content = clean_content[:-3]
+                clean_content = clean_content.strip()
+
             db_artifact = self.artifact_repo.create_artifact(
                 session_id=session_id,
                 title=f"Generated {art_type.upper()} Artifact",
                 artifact_type=art_type,
-                content=full_content,
+                content=clean_content,
             )
             artifact_data = {
+                "type": "artifact",
                 "id": str(db_artifact.id),
                 "title": db_artifact.title,
                 "artifact_type": db_artifact.artifact_type,
+                "language": db_artifact.artifact_type,
                 "content": db_artifact.content,
                 "version": db_artifact.version,
             }

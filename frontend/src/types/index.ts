@@ -169,4 +169,4 @@ export interface StreamingState {
   abortController?: AbortController;
 }
 
-export type ViewTab = 'preview' | 'code';
+export type ViewTab = 'preview' | 'code' | 'split';

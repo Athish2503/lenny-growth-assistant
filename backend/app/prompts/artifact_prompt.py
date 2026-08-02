@@ -5,9 +5,9 @@ Prompt templates for Artifact generation (Markdown, HTML, CSS).
 from typing import Any, List, Optional
 
 
-ARTIFACT_PROMPT_TEMPLATE = """You are an expert developer and technical author creating clean, structured, modular artifacts.
+ARTIFACT_PROMPT_TEMPLATE = """You are a Principal Frontend Architect and AI Product Engineer creating world-class, production-quality code artifacts.
 
-Generate a structured code artifact of type '{artifact_type}' based on the user request and conversation history.
+Generate a structured artifact of type '{artifact_type}' based on the user request and conversation history.
 
 CONVERSATION HISTORY:
 {history_str}
@@ -17,24 +17,30 @@ USER REQUEST:
 
 ARTIFACT TYPE: {artifact_type}
 
-RULES:
-1. If the request asks for an artifact based on the conversation history, synthesize all relevant insights, frameworks, key points, and summaries from the chat history into a complete, high-quality {artifact_type} document or component.
-2. Provide valid, standard {artifact_type} content cleanly formatted.
-3. For 'markdown': Use GitHub Flavored Markdown (GFM) with structured headers, bullet points, bold key terms, tables, and callout boxes.
-4. For 'html': Use semantic HTML5 markup with clean embedded inline CSS/styling or modern flexbox/grid layout so it renders beautifully in an iframe.
-5. For 'css': Provide modular CSS rulesets with custom CSS properties, flexbox/grid styles, and responsive classes.
-6. Return the raw content directly without conversational preamble.
+STRICT PRODUCTION RULES:
+1. Unless the user explicitly requests Markdown (e.g. "markdown", "doc", "notes"), generate HTML + CSS.
+2. For HTML artifacts:
+   - Output self-contained HTML5 document with `<head>` and `<body>`.
+   - Always include Tailwind CSS CDN script: `<script src="https://cdn.tailwindcss.com"></script>`
+   - Include Google Fonts link for modern typography: Inter, Outfit, or Plus Jakarta Sans.
+   - Use high-end design aesthetics: Linear/Raycast/Vercel inspiration, dark mode or sleek glassmorphism, soft glow accents, gradient buttons/borders, responsive grid layouts, card containers, micro-hover animations, clean spacing, and accessible color contrast.
+   - If generating dashboards, landing pages, email templates, wireframes, roadmaps, UI components, resumes, or reports, make them fully styled, interactive, and visually stunning.
+   - If charts are required, include Chart.js (`<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>`) and initialize interactive canvas charts.
+   - If diagrams are requested, include Mermaid.js (`<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>`) or clean SVG nodes.
+3. For Markdown artifacts:
+   - Provide GitHub Flavored Markdown (GFM) with rich headers, GFM tables, task lists (- [x]), callouts (> [!NOTE], > [!TIP], > [!IMPORTANT], > [!WARNING]), LaTeX math equations ($...$ or $$...$$), footnotes, and syntax-highlighted code blocks (including ```mermaid blocks).
+4. Return ONLY raw executable content without conversational preamble, backtick markdown wrappers (e.g. do not wrap full HTML code in ```html ... ``` if type is html), or extra explanations. Return pure valid code.
 
 Generate the complete {artifact_type} artifact content now:"""
 
 
 def build_artifact_prompt(
     prompt: str,
-    artifact_type: str = "markdown",
+    artifact_type: str = "html",
     history: Optional[List[Any]] = None,
 ) -> str:
     """
-    Formats the prompt template for generating structured artifacts (Markdown, HTML, CSS).
+    Formats the prompt template for generating structured artifacts (HTML or Markdown).
     """
     formatted_history = []
     if history:
@@ -45,8 +51,13 @@ def build_artifact_prompt(
 
     history_str = "\n".join(formatted_history) if formatted_history else "No previous conversation history."
 
+    # Determine default type: unless markdown is explicitly requested, default to html
+    prompt_lower = prompt.lower()
+    inferred_type = "markdown" if any(w in prompt_lower for w in ["markdown", "md file", "gfm", "raw text"]) else "html"
+    res_type = artifact_type.lower() if artifact_type in ["html", "markdown", "css"] else inferred_type
+
     return ARTIFACT_PROMPT_TEMPLATE.format(
         prompt=prompt,
-        artifact_type=artifact_type.lower(),
+        artifact_type=res_type,
         history_str=history_str,
     )

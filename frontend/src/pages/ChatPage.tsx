@@ -88,7 +88,6 @@ export function ChatPage() {
   const navigate = useNavigate();
   const { messages, isLoading, isStreaming, sendMessage, stopStreaming, error } = useChat(sessionId);
   const { toggleInspector, inspectorOpen } = useUIStore();
-  const { currentArtifact } = useArtifactStore();
   const { setActiveSessionId, addSession } = useSessionStore();
 
   // Sync active session inside useEffect to prevent render-phase state updates
@@ -196,12 +195,17 @@ export function ChatPage() {
           </div>
         </div>
 
-        {/* Artifact Viewer (if open and not using inspector) */}
-        {currentArtifact && (
-          <div style={{ width: 520, flexShrink: 0 }}>
-            <ArtifactViewer />
-          </div>
-        )}
+        {/* Artifact Runtime Panel */}
+        <ArtifactViewer
+          onRegenerate={() => {
+            if (messages.length > 0) {
+              const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
+              if (lastUserMsg) {
+                handleSend(lastUserMsg.content);
+              }
+            }
+          }}
+        />
       </div>
     </div>
   );
