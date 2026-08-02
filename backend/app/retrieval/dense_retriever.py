@@ -30,15 +30,9 @@ class DenseRetriever(BaseRetriever):
         query_embedding = await self.embedding_service.embed_query(query)
 
         # 2. Query ChromaDB collection
-        collection = await self.vector_store.get_collection()
-        loop = asyncio.get_running_loop()
-        chroma_response = await loop.run_in_executor(
-            None,
-            lambda: collection.query(
-                query_embeddings=[query_embedding],
-                n_results=top_k,
-                include=["documents", "metadatas", "distances"],
-            ),
+        chroma_response = await self.vector_store.query(
+            query_embeddings=query_embedding,
+            n_results=top_k,
         )
 
         results: List[RetrievalResult] = []

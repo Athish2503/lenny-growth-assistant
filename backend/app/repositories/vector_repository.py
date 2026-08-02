@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Union, Optional, Dict, Any
 from app.ingestion.models import Chunk
 from app.services.embedding_service import EmbeddingService
-from app.repositories.vector_store import VectorStore
+from app.retrieval.vector_store import VectorStore
 
 
 def _sanitize_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
@@ -67,16 +67,14 @@ class VectorRepository:
             }
             metadatas.append(_sanitize_metadata(raw_meta))
 
-        collection = await self.vector_store.get_collection()
-        loop = asyncio.get_running_loop()
-        await loop.run_in_executor(
+        await asyncio.get_running_loop().run_in_executor(
             None,
-            lambda: collection.add(
+            lambda: self.vector_store.add_documents(
                 ids=ids,
                 embeddings=embeddings,
                 documents=documents,
                 metadatas=metadatas,
-            )
+            ),
         )
 
     async def add_chunks_from_file(self, file_path: Union[str, Path]) -> None:

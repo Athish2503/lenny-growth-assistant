@@ -19,7 +19,18 @@ export const ArtifactRuntimeIframe = React.memo(function ArtifactRuntimeIframe({
   }, [artifact.id, setRenderError]);
 
   const srcDoc = useMemo(() => {
-    const rawContent = artifact.content || '';
+    let rawContent = artifact.content || '';
+    // Transform HTML comment placeholders like <!-- Chart.js chart for ARR --> into interactive canvas containers
+    rawContent = rawContent.replace(
+      /<!--\s*(?:Chart\.js\s+chart\s+for|chart\s+for)?\s*([A-Za-z0-9_\s]+)\s*-->/gi,
+      (match, name) => {
+        const cleanName = name.trim().replace(/\s+/g, '_').toLowerCase();
+        if (cleanName.includes('arr') || cleanName.includes('mrr') || cleanName.includes('churn') || cleanName.includes('user') || cleanName.includes('chart') || cleanName.includes('active')) {
+          return `<div class="bg-gray-800/60 p-4 rounded-xl border border-gray-700/50 my-4 shadow-lg"><h4 class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">${name.trim()} Visualizer</h4><div style="position: relative; height: 220px; width: 100%;"><canvas id="${cleanName}_canvas"></canvas></div></div>`;
+        }
+        return match;
+      }
+    );
     const hasHead = rawContent.toLowerCase().includes('<html') || rawContent.toLowerCase().includes('<head');
 
     if (hasHead) {
@@ -45,6 +56,64 @@ export const ArtifactRuntimeIframe = React.memo(function ArtifactRuntimeIframe({
             if (window.mermaid) {
               window.mermaid.initialize({ startOnLoad: true, theme: 'dark' });
             }
+            setTimeout(function() {
+              if (window.Chart) {
+                const canvases = document.querySelectorAll('canvas');
+                canvases.forEach(function(canvas, idx) {
+                  try {
+                    if (!Chart.getChart(canvas)) {
+                      const id = (canvas.id || 'chart_' + idx).toLowerCase();
+                      let label = 'Metric';
+                      let data = [12, 19, 25, 32, 40, 55];
+                      let color = '#6366f1';
+
+                      if (id.includes('arr')) {
+                        label = 'ARR ($M)';
+                        data = [1.2, 1.8, 2.5, 3.4, 4.2, 5.8];
+                        color = '#3b82f6';
+                      } else if (id.includes('mrr')) {
+                        label = 'MRR ($K)';
+                        data = [100, 150, 210, 280, 350, 480];
+                        color = '#10b981';
+                      } else if (id.includes('churn')) {
+                        label = 'Churn Rate (%)';
+                        data = [4.2, 3.8, 3.1, 2.5, 2.1, 1.8];
+                        color = '#ef4444';
+                      } else if (id.includes('user') || id.includes('active')) {
+                        label = 'Active Users (K)';
+                        data = [10, 18, 25, 42, 60, 85];
+                        color = '#8b5cf6';
+                      }
+
+                      new Chart(canvas, {
+                        type: 'line',
+                        data: {
+                          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                          datasets: [{
+                            label: label,
+                            data: data,
+                            borderColor: color,
+                            backgroundColor: color + '22',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2
+                          }]
+                        },
+                        options: {
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: { legend: { display: true, labels: { color: '#9ca3af' } } },
+                          scales: {
+                            x: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(156,163,175,0.1)' } },
+                            y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(156,163,175,0.1)' } }
+                          }
+                        }
+                      });
+                    }
+                  } catch (e) { console.error('Auto Chart Init error:', e); }
+                });
+              }
+            }, 250);
           });
         </script>
         <style>

@@ -22,15 +22,16 @@ class RetrievalConfig(BaseSettings):
 
     CHROMA_API_KEY: str | None = Field(default=None)
     CHROMA_TENANT: str | None = Field(default=None)
-    CHROMA_DATABASE: str | None = Field(default=None)
+    CHROMA_DATABASE: str | None = Field(default="lenny_transcripts")
 
-    CHROMA_DB_PATH: str = Field(
-        default="backend/chroma_db",
-        validation_alias=AliasChoices("CHROMA_DB_PATH", "CHROMA_PATH")
+    # Local path — only used in tests when CHROMA_API_KEY is explicitly empty
+    CHROMA_DB_PATH: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CHROMA_DB_PATH", "CHROMA_PATH", "CHROMA_PERSIST_DIRECTORY")
     )
     CHROMA_COLLECTION: str = Field(
-        default="lenny_transcripts",
-        validation_alias=AliasChoices("CHROMA_COLLECTION", "COLLECTION_NAME")
+        default="Lenny_Assist",
+        validation_alias=AliasChoices("CHROMA_COLLECTION", "CHROMA_COLLECTION_NAME", "COLLECTION_NAME")
     )
     EMBEDDING_MODEL: str = Field(
         default="all-MiniLM-L6-v2",
@@ -50,7 +51,7 @@ class RetrievalConfig(BaseSettings):
     )
 
     @property
-    def CHROMA_PATH(self) -> str:
+    def CHROMA_PATH(self) -> str | None:
         return self.CHROMA_DB_PATH
 
     @property
@@ -66,13 +67,19 @@ class RetrievalConfig(BaseSettings):
         return self.EMBEDDING_BATCH_SIZE
 
     @property
+    def use_chroma_cloud(self) -> bool:
+        """True when Chroma Cloud credentials are configured."""
+        return bool(self.CHROMA_API_KEY and self.CHROMA_TENANT and self.CHROMA_DATABASE)
+
+    @property
     def resolved_chroma_path(self) -> Path:
-        """Resolves absolute path for ChromaDB storage directory."""
+        """Resolves absolute path for local ChromaDB storage (tests only)."""
+        if not self.CHROMA_DB_PATH:
+            raise ValueError("CHROMA_DB_PATH is required for local ChromaDB mode")
         path = Path(self.CHROMA_DB_PATH)
         if path.is_absolute():
             return path
         base_dir = Path(__file__).resolve().parent.parent.parent
-        # If path starts with "backend/" and base_dir ends with "backend", resolve properly
         if str(path).startswith("backend") and base_dir.name == "backend":
             return (base_dir.parent / path).resolve()
         return (base_dir / path).resolve()

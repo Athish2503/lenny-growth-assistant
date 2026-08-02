@@ -39,13 +39,28 @@ class Settings(BaseSettings):
         default="all-MiniLM-L6-v2",
         validation_alias=AliasChoices("EMBEDDING_MODEL", "MODEL_NAME")
     )
-    CHROMA_PERSIST_DIRECTORY: str = Field(
-        default="./chroma_db",
-        validation_alias=AliasChoices("CHROMA_PERSIST_DIRECTORY", "CHROMA_DB_PATH", "CHROMA_PATH")
+
+    # Chroma Cloud (required for vector storage)
+    CHROMA_API_KEY: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("CHROMA_API_KEY")
+    )
+    CHROMA_TENANT: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("CHROMA_TENANT")
+    )
+    CHROMA_DATABASE: Optional[str] = Field(
+        default="lenny_transcripts",
+        validation_alias=AliasChoices("CHROMA_DATABASE")
     )
     CHROMA_COLLECTION_NAME: str = Field(
-        default="lenny_transcripts",
+        default="Lenny_Assist",
         validation_alias=AliasChoices("CHROMA_COLLECTION_NAME", "CHROMA_COLLECTION", "COLLECTION_NAME")
+    )
+    # Local path — only used in tests when CHROMA_API_KEY is explicitly empty
+    CHROMA_PERSIST_DIRECTORY: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("CHROMA_PERSIST_DIRECTORY", "CHROMA_DB_PATH", "CHROMA_PATH")
     )
 
     @field_validator("DATABASE_URL", mode="before")

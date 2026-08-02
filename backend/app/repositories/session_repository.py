@@ -14,7 +14,7 @@ class SessionRepository:
     def __init__(self, db: DbSession):
         self.db = db
 
-    def create(self, user_id: UUID, title: Optional[str] = None) -> Session:
+    def create(self, user_id: UUID, title: Optional[str] = None, session_id: Optional[UUID] = None) -> Session:
         # Guarantee user exists in database to satisfy FK constraint
         stmt = select(User).where(User.id == user_id)
         user = self.db.scalars(stmt).first()
@@ -27,7 +27,11 @@ class SessionRepository:
             self.db.add(user)
             self.db.commit()
 
-        session = Session(user_id=user_id, title=title)
+        kwargs = {"user_id": user_id, "title": title}
+        if session_id:
+            kwargs["id"] = session_id
+
+        session = Session(**kwargs)
         self.db.add(session)
         self.db.commit()
         self.db.refresh(session)

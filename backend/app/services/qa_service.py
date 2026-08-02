@@ -5,6 +5,7 @@ QAService for handling question answering via Hybrid Retrieval, Prompt Building,
 from typing import Any, Dict, List, Optional
 from app.retrieval.hybrid_retriever import HybridRetriever
 from app.retrieval.models import RetrievalResult
+from app.retrieval.query_contextualizer import contextualize_query
 from app.services.llm_service import LLMService
 from app.prompts.qa_prompt import build_qa_prompt
 
@@ -12,7 +13,7 @@ from app.prompts.qa_prompt import build_qa_prompt
 class QAService:
     """
     QAService implementing the workflow:
-    Question -> Hybrid Retrieval -> Prompt Builder -> LLM -> Grounded Answer with citations.
+    Question -> Contextualized Query -> Hybrid Retrieval -> Prompt Builder -> LLM -> Grounded Answer with citations.
     No essay generation. No artifacts.
     """
 
@@ -35,14 +36,17 @@ class QAService:
         Executes the Q&A workflow for a user question.
         Returns a dictionary containing content, citations/sources, and metadata.
         """
+        # Contextualize query with conversation history for anaphora resolution
+        search_query = contextualize_query(query, history)
+
         # Step 1 & 2: Hybrid Retrieval
         retrieved_chunks: List[RetrievalResult] = await self.retriever.retrieve(
-            query=query,
+            query=search_query,
             top_k=self.top_k,
         )
 
-        # Step 3: Prompt Building
-        prompt = build_qa_prompt(query=query, context_chunks=retrieved_chunks)
+        # Step 3: Prompt Building with conversation history
+        prompt = build_qa_prompt(query=query, context_chunks=retrieved_chunks, history=history)
 
         # Step 4 & 5: LLM Generation / Grounded Answer
         if self.llm_service:

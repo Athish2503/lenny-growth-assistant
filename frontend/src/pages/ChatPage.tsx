@@ -62,16 +62,32 @@ export function ChatPage() {
         addSession(newSession);
         activeId = newSession.id;
         setActiveSessionId(activeId);
+        setPendingSessionId(null);
         navigate(`/chat/${activeId}`);
       } catch (err) {
         console.error('Failed to create session:', err);
-        return;
+        const fallbackId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+        const fallbackSession = {
+          id: fallbackId,
+          title: msg.length > 30 ? msg.slice(0, 30) + '...' : msg,
+          user_id: 'user-default',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          message_count: 0,
+        };
+        addSession(fallbackSession);
+        activeId = fallbackId;
+        setActiveSessionId(activeId);
+        setPendingSessionId(null);
+        navigate(`/chat/${activeId}`);
       }
     } else if (pendingSessionId === activeId) {
-      // First message sent in this session — it's no longer pending/empty
+      // First message sent in this session — clear pending state immediately
       setPendingSessionId(null);
     }
-    sendMessage(msg, activeId);
+    if (activeId) {
+      sendMessage(msg, activeId);
+    }
   };
 
   const showWelcome = messages.length === 0 && !isStreaming;

@@ -29,7 +29,12 @@ STRICT PRODUCTION RULES:
    - Include Google Fonts link for modern typography: Inter, Outfit, or Plus Jakarta Sans.
    - Use high-end design aesthetics: Linear/Raycast/Vercel inspiration, dark mode or sleek glassmorphism, soft glow accents, gradient buttons/borders, responsive grid layouts, card containers, micro-hover animations, clean spacing, and accessible color contrast.
    - If generating dashboards, landing pages, email templates, wireframes, roadmaps, UI components, resumes, or reports, make them fully styled, interactive, and visually stunning with real data from the sources.
-   - If charts are required, include Chart.js (`<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>`) and initialize interactive canvas charts.
+   - CRITICAL FOR CHARTS (ARR, MRR, Churn, Active Users, etc.):
+     - Always include Chart.js script tag in <head>: `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>`
+     - NEVER output HTML comments like `<!-- Chart.js chart for ARR -->` or empty canvas placeholders.
+     - You MUST generate actual `<canvas id="arrChart"></canvas>`, `<canvas id="mrrChart"></canvas>`, etc.
+     - You MUST write the complete inline `<script>` at the bottom of the body initializing Chart.js charts using `new Chart(document.getElementById('...'), {{ type: 'line', data: ..., options: ... }})`.
+     - Wrap Chart.js code inside `document.addEventListener('DOMContentLoaded', function() {{ ... }})` to ensure elements exist.
    - If diagrams are requested, include Mermaid.js (`<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>`) or clean SVG nodes.
 4. For Markdown artifacts:
    - Provide GitHub Flavored Markdown (GFM) with rich headers, GFM tables, task lists (- [x]), callouts (> [!NOTE], > [!TIP], > [!IMPORTANT], > [!WARNING]), LaTeX math equations ($...$ or $$...$$), footnotes, and syntax-highlighted code blocks (including ```mermaid blocks).

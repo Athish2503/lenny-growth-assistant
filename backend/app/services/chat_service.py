@@ -16,6 +16,7 @@ from app.services.qa_service import QAService
 from app.services.essay_service import EssayService
 from app.services.artifact_service import ArtifactService
 from app.retrieval.hybrid_retriever import HybridRetriever
+from app.retrieval.query_contextualizer import contextualize_query
 from app.prompts.qa_prompt import build_qa_prompt
 from app.prompts.essay_prompt import build_essay_prompt
 from app.prompts.artifact_prompt import build_artifact_prompt
@@ -73,10 +74,11 @@ class ChatService:
         start_time = time.time()
         req_id = request_id or str(uuid.uuid4())
 
-        # Verify session exists
+        # Verify session exists, create on the fly if not found (self-healing)
         session = self.session_repo.get_by_id(session_id)
         if not session:
-            raise ValueError(f"Session {session_id} not found")
+            title = message_text.strip()[:30] + '...' if len(message_text.strip()) > 30 else message_text.strip()
+            session = self.session_repo.create(user_id=user_id, title=title, session_id=session_id)
 
         # Load history prior to current message
         history = self.message_repo.get_session_history(session_id)
@@ -238,9 +240,11 @@ class ChatService:
         start_time = time.time()
         req_id = request_id or str(uuid.uuid4())
 
+        # Verify session exists, create on the fly if not found (self-healing)
         session = self.session_repo.get_by_id(session_id)
         if not session:
-            raise ValueError(f"Session {session_id} not found")
+            title = message_text.strip()[:30] + '...' if len(message_text.strip()) > 30 else message_text.strip()
+            session = self.session_repo.create(user_id=user_id, title=title, session_id=session_id)
 
         history = self.message_repo.get_session_history(session_id)
         prior_history_count = len(history)
@@ -257,6 +261,35 @@ class ChatService:
         )
 
         if intent == IntentType.QA:
+            t_ret_start = time.time()
+            search_query = contextualize_query(message_text, history)
+            try:
+                retrieved_chunks = await self.retriever.retrieve(query=search_query, top_k=5)
+            except Exception:
+                retrieved_chunks = []
+            retrieval_latency = (time.time() - t_ret_start) * 1000
+
+            for chunk in retrieved_chunks:
+                meta = chunk.metadata or {}
+                citations.append({
+                    "id": chunk.chunk_id,
+                    "title": meta.get("title") or f"Episode with {meta.get('guest', 'Guest')}",
+                    "source": meta.get("youtube_url") or meta.get("guest") or "Lenny's Podcast",
+                    "snippet": chunk.content[:200] + "..." if len(chunk.content) > 200 else chunk.content,
+                    "relevance_score": round(float(chunk.score), 3) if chunk.score is not None else 0.85,
+                    "chunk_id": chunk.chunk_id,
+                    "guest": meta.get("guest") or "Unknown Guest",
+                    "episode_title": meta.get("title") or "Lenny's Podcast Episode",
+                    "youtube_url": meta.get("youtube_url") or "",
+                })
+            prompt = build_qa_prompt(query=message_text, context_chunks=retrieved_chunks, history=history)
+        elif intent == IntentType.ESSAY:
+            prompt = build_essay_prompt(topic=message_text, history=history)
+        else: # ARTIFACT
+            msg_lower = message_text.lower()
+            art_type = "markdown" if any(w in msg_lower for w in ["markdown", "md", "doc", "gfm"]) else "html"
+            
+            # Retrieve relevant context from database for artifact generation
             t_ret_start = time.time()
             try:
                 retrieved_chunks = await self.retriever.retrieve(query=message_text, top_k=5)
@@ -277,13 +310,13 @@ class ChatService:
                     "episode_title": meta.get("title") or "Lenny's Podcast Episode",
                     "youtube_url": meta.get("youtube_url") or "",
                 })
-            prompt = build_qa_prompt(query=message_text, context_chunks=retrieved_chunks)
-        elif intent == IntentType.ESSAY:
-            prompt = build_essay_prompt(topic=message_text, history=history)
-        else: # ARTIFACT
-            msg_lower = message_text.lower()
-            art_type = "markdown" if any(w in msg_lower for w in ["markdown", "md", "doc", "gfm"]) else "html"
-            prompt = build_artifact_prompt(prompt=message_text, artifact_type=art_type, history=history)
+
+            prompt = build_artifact_prompt(
+                prompt=message_text,
+                artifact_type=art_type,
+                history=history,
+                context_chunks=retrieved_chunks
+            )
 
         # Emit initial metadata event
         meta_event = {
@@ -319,13 +352,27 @@ class ChatService:
             msg_lower = message_text.lower()
             art_type = "markdown" if any(w in msg_lower for w in ["markdown", "md", "doc", "gfm"]) else "html"
             clean_content = full_content.strip()
-            if art_type == "html":
-                if clean_content.startswith("```html"):
-                    clean_content = clean_content[7:]
-                elif clean_content.startswith("```"):
-                    clean_content = clean_content[3:]
-                if clean_content.endswith("```"):
-                    clean_content = clean_content[:-3]
+            
+            # Robustly extract and clean the HTML/CSS from full_content
+            if art_type in ["html", "css"]:
+                if "```html" in clean_content:
+                    clean_content = clean_content.split("```html", 1)[1]
+                    if "```" in clean_content:
+                        clean_content = clean_content.split("```", 1)[0]
+                elif "```" in clean_content:
+                    parts = clean_content.split("```")
+                    if len(parts) >= 3:
+                        clean_content = parts[1]
+                        if clean_content.startswith("html"):
+                            clean_content = clean_content[4:]
+                elif "<!DOCTYPE" in clean_content or "<html" in clean_content:
+                    start_idx = clean_content.find("<!DOCTYPE")
+                    if start_idx == -1:
+                        start_idx = clean_content.find("<html")
+                    end_idx = clean_content.rfind("</html>")
+                    if start_idx != -1 and end_idx != -1:
+                        clean_content = clean_content[start_idx : end_idx + 7]
+
                 clean_content = clean_content.strip()
 
             db_artifact = self.artifact_repo.create_artifact(

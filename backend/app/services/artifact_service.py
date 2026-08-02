@@ -108,7 +108,7 @@ class ArtifactService:
         Generates a structured artifact (HTML or Markdown) dictionary without rendering.
         """
         resolved_type = self._infer_artifact_type(prompt, artifact_type)
-        artifact_title = title or f"Generated {resolved_type.upper()} Artifact"
+        artifact_title = title or (prompt.strip().capitalize() if prompt else f"Generated {resolved_type.upper()} Artifact")
 
         formatted_prompt = build_artifact_prompt(
             prompt=prompt,

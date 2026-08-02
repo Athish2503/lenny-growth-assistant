@@ -76,11 +76,11 @@ async def test_artifact_service_fallback_without_llm():
 
     md_result = await service.generate_artifact("Create overview", artifact_type="markdown")
     assert md_result["artifact_type"] == "markdown"
-    assert "Overview" in md_result["content"]
+    assert "overview" in md_result["content"].lower()
 
     html_result = await service.generate_artifact("Create html button", artifact_type="html")
     assert html_result["artifact_type"] == "html"
-    assert "<section class=\"artifact-container\">" in html_result["content"]
+    assert "<!DOCTYPE html>" in html_result["content"]
 
     css_result = await service.generate_artifact("Create css styles", artifact_type="css")
     assert css_result["artifact_type"] == "css"

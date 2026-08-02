@@ -13,8 +13,10 @@ class SessionService:
     def __init__(self, session_repo: SessionRepository):
         self.session_repo = session_repo
 
-    def create_session(self, user_id: UUID, title: Optional[str] = None) -> Session:
-        return self.session_repo.create(user_id=user_id, title=title)
+    def create_session(
+        self, user_id: UUID, title: Optional[str] = None, session_id: Optional[UUID] = None
+    ) -> Session:
+        return self.session_repo.create(user_id=user_id, title=title, session_id=session_id)
 
     def get_session(self, session_id: UUID) -> Optional[Session]:
         return self.session_repo.get_by_id(session_id)

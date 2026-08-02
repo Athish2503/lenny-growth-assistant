@@ -48,7 +48,8 @@ class BM25Retriever(BaseRetriever):
 
         total_length = 0
         for chunk in chunks:
-            tokens = self.tokenizer(chunk.get("content", ""))
+            content = chunk.get("content") or chunk.get("text") or ""
+            tokens = self.tokenizer(content)
             length = len(tokens)
             self.doc_lengths.append(length)
             total_length += length
@@ -135,17 +136,31 @@ class BM25Retriever(BaseRetriever):
         results: List[RetrievalResult] = []
         for idx in ranked_indices[:top_k]:
             if scores[idx] <= 0.0 and len(results) > 0:
-                # Optionally break if score is 0 and we already have matches
                 pass
 
             chunk = self.corpus_chunks[idx]
+            chunk_id = chunk.get("chunk_id") or chunk.get("id") or f"bm25-{idx}"
+            content = chunk.get("content") or chunk.get("text") or ""
+            
+            metadata = chunk.get("metadata") or {}
+            if not metadata:
+                metadata = {
+                    "episode_id": chunk.get("episode_id", ""),
+                    "guest": chunk.get("guest", ""),
+                    "title": chunk.get("title", ""),
+                    "topics": chunk.get("topics", ""),
+                    "publish_date": chunk.get("publish_date", ""),
+                    "youtube_url": chunk.get("youtube_url", ""),
+                    "chunk_number": chunk.get("chunk_number", 0),
+                }
+
             results.append(
                 RetrievalResult(
-                    doc_id=chunk.get("doc_id", chunk.get("chunk_id", "")),
-                    chunk_id=chunk.get("chunk_id", ""),
-                    content=chunk.get("content", ""),
+                    doc_id=chunk.get("doc_id") or chunk.get("episode_id") or chunk_id,
+                    chunk_id=chunk_id,
+                    content=content,
                     score=scores[idx],
-                    metadata=chunk.get("metadata", {}),
+                    metadata=metadata,
                 )
             )
 

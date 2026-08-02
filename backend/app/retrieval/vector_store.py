@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class VectorStore:
-    """Vector database wrapper for managing local persistent ChromaDB collections."""
+    """Vector database wrapper for Chroma Cloud collections."""
 
     def __init__(
         self,
@@ -22,25 +22,22 @@ class VectorStore:
         tenant: Optional[str] = None,
         database: Optional[str] = None,
     ) -> None:
-        """Initialize VectorStore with local persistence path or Chroma Cloud connection settings.
-        
-        Args:
-            chroma_path: Path to local directory where ChromaDB stores data.
-            collection_name: Name of ChromaDB collection.
-            config: Optional RetrievalConfig override.
-            api_key: Optional Chroma Cloud API key.
-            tenant: Optional Chroma Cloud tenant ID.
-            database: Optional Chroma Cloud database name.
+        """Initialize VectorStore with Chroma Cloud connection settings.
+
+        Pass ``api_key=""`` explicitly to force local persistent mode (tests only).
         """
         cfg = config or get_retrieval_config()
-        path = Path(chroma_path) if chroma_path else cfg.resolved_chroma_path
-        self.chroma_path = path.resolve()
         self.collection_name = collection_name or cfg.COLLECTION_NAME
-        self.api_key = api_key or cfg.CHROMA_API_KEY
+        self.api_key = api_key if api_key is not None else cfg.CHROMA_API_KEY
         self.tenant = tenant or cfg.CHROMA_TENANT
         self.database = database or cfg.CHROMA_DATABASE
+        self.chroma_path: Optional[Path] = None
 
         if self.api_key:
+            if not self.tenant or not self.database:
+                raise ValueError(
+                    "CHROMA_TENANT and CHROMA_DATABASE are required when using Chroma Cloud"
+                )
             logger.info(
                 "Connecting to Chroma Cloud (tenant: %s, database: %s) for collection: %s",
                 self.tenant,
@@ -53,27 +50,45 @@ class VectorStore:
                 api_key=self.api_key,
             )
         else:
-            # Ensure target directory exists for local persistence
+            path = Path(chroma_path) if chroma_path else cfg.resolved_chroma_path
+            self.chroma_path = path.resolve()
             self.chroma_path.mkdir(parents=True, exist_ok=True)
             logger.info(
                 "Connecting to persistent local ChromaDB at: %s for collection: %s",
                 self.chroma_path,
                 self.collection_name,
             )
-            self.client: ClientAPI = chromadb.PersistentClient(path=str(self.chroma_path))
+            self.client = chromadb.PersistentClient(path=str(self.chroma_path))
         self._collection: Optional[Collection] = None
 
     def get_or_create_collection(self) -> Collection:
-        """Get existing collection or create a new one using cosine distance metric.
-        
-        Returns:
-            ChromaDB Collection instance.
-        """
+        """Get existing collection or create a new one using cosine distance metric."""
         if self._collection is None:
-            self._collection = self.client.get_or_create_collection(
-                name=self.collection_name,
-                metadata={"hnsw:space": "cosine"},
-            )
+            # Dynamically auto-select the correct non-empty collection if configured one is empty
+            try:
+                collections = self.client.list_collections()
+                non_empty_cols = [c for c in collections if c.count() > 0]
+                if non_empty_cols:
+                    chosen_col = None
+                    # Keep configured name if it actually has data
+                    for c in non_empty_cols:
+                        if c.name == self.collection_name:
+                            chosen_col = c
+                            break
+                    # Otherwise fallback to the first collection that actually has data
+                    if not chosen_col:
+                        chosen_col = non_empty_cols[0]
+                        logger.info("Chroma auto-selected non-empty collection: %s (count: %d)", chosen_col.name, chosen_col.count())
+                        self.collection_name = chosen_col.name
+                    self._collection = chosen_col
+            except Exception as e:
+                logger.warning("Error listing collections for auto-selection: %s", e)
+
+            if self._collection is None:
+                self._collection = self.client.get_or_create_collection(
+                    name=self.collection_name,
+                    metadata={"hnsw:space": "cosine"},
+                )
             logger.info(
                 "Collection '%s' ready (Cosine Similarity). Total items: %d",
                 self.collection_name,
@@ -102,14 +117,7 @@ class VectorStore:
         documents: List[str],
         metadatas: List[Dict[str, Any]],
     ) -> None:
-        """Add documents, vectors, and metadata into the ChromaDB collection.
-        
-        Args:
-            ids: List of unique document identifiers.
-            embeddings: List of embedding vectors.
-            documents: List of document text strings.
-            metadatas: List of metadata dictionaries.
-        """
+        """Add documents, vectors, and metadata into the ChromaDB collection."""
         if not ids:
             return
 
@@ -129,20 +137,9 @@ class VectorStore:
         where: Optional[Dict[str, Any]] = None,
         where_document: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """Query the collection using dense vector representations.
-        
-        Args:
-            query_embeddings: Query embedding vector or list of query embedding vectors.
-            n_results: Number of nearest neighbors to return.
-            where: Metadata filter conditions.
-            where_document: Document text filter conditions.
-            
-        Returns:
-            ChromaDB query results dictionary containing ids, distances, metadatas, documents.
-        """
+        """Query the collection using dense vector representations."""
         collection = self.get_or_create_collection()
 
-        # Wrap single vector if necessary
         if query_embeddings and isinstance(query_embeddings[0], float):
             query_embeddings = [query_embeddings]  # type: ignore
 
@@ -151,17 +148,11 @@ class VectorStore:
             n_results=n_results,
             where=where,
             where_document=where_document,
+            include=["documents", "metadatas", "distances"],
         )
 
     def peek(self, limit: int = 5) -> Dict[str, Any]:
-        """Peek at the first few items in the collection.
-        
-        Args:
-            limit: Maximum items to return.
-            
-        Returns:
-            Peek result dictionary.
-        """
+        """Peek at the first few items in the collection."""
         collection = self.get_or_create_collection()
         return collection.peek(limit=limit)
 
@@ -174,4 +165,3 @@ class VectorStore:
     def reset(self) -> None:
         """Alias for reset_collection."""
         self.reset_collection()
-

@@ -1,9 +1,9 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { useState } from 'react';
-import { Copy, Check, RotateCcw, ExternalLink, FileText, Database, Search, PenTool, FileCode } from 'lucide-react';
+import { Copy, Check, ExternalLink, FileText, Database, Search, PenTool, FileCode } from 'lucide-react';
 import type { Message } from '@/types';
 import { CitationChip } from './CitationChip';
 import { useArtifactStore } from '@/store/artifactStore';
@@ -49,9 +49,122 @@ function UserMessage({ message }: { message: Message }) {
   );
 }
 
+// ============================================================
+// Compact Inline Citation Chip Component
+// ============================================================
+interface CitationChipInlineProps {
+  citation: any;
+  index: number;
+}
+
+function CitationChipInline({ citation, index }: CitationChipInlineProps) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const guestName = citation.guest || (citation.title ? citation.title.replace(/^Episode with /i, '') : `Source ${index}`);
+  const displayTitle = citation.episode_title || citation.title || "Lenny's Growth Podcast";
+  const scorePct = Math.round((citation.relevance_score > 1 ? citation.relevance_score / 100 : citation.relevance_score) * 100);
+
+  let ytUrl = citation.youtube_url;
+  if (!ytUrl && citation.source && citation.source.startsWith('http')) {
+    ytUrl = citation.source;
+  }
+  if (!ytUrl) {
+    ytUrl = `https://www.youtube.com/results?search_query=Lenny+Podcast+${encodeURIComponent(guestName)}`;
+  }
+
+  return (
+    <span
+      style={{
+        position: 'relative',
+        display: 'inline-flex',
+        alignItems: 'center',
+        margin: '0 3px',
+        verticalAlign: 'middle',
+      }}
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <a
+        href={ytUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          background: 'rgba(59, 130, 246, 0.08)',
+          color: 'var(--color-accent)',
+          border: '1px solid rgba(59, 130, 246, 0.22)',
+          borderRadius: 6,
+          padding: '1px 6px',
+          fontSize: '0.725rem',
+          fontWeight: 600,
+          textDecoration: 'none',
+          cursor: 'pointer',
+          transition: 'all 0.15s ease',
+        }}
+      >
+        <span style={{ fontSize: '0.62rem', opacity: 0.8 }}>⚡</span>
+        <span>{guestName.length > 20 ? guestName.slice(0, 20) + '…' : guestName}</span>
+      </a>
+
+      {/* Mini Tooltip */}
+      <AnimatePresence>
+        {showTooltip && (
+          <motion.span
+            initial={{ opacity: 0, y: 4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.95 }}
+            transition={{ duration: 0.1 }}
+            style={{
+              position: 'absolute',
+              bottom: 'calc(100% + 6px)',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: '#121215',
+              border: '1px solid var(--color-border)',
+              borderRadius: 8,
+              padding: '8px 10px',
+              width: 250,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              zIndex: 100,
+              pointerEvents: 'none',
+              display: 'block',
+              textAlign: 'left',
+              lineHeight: 1.4,
+              fontSize: '0.75rem',
+            }}
+          >
+            <strong style={{ display: 'block', color: '#fff', marginBottom: 2 }}>{displayTitle}</strong>
+            <span style={{ display: 'block', color: 'var(--color-accent)', fontSize: '0.7rem', fontWeight: 600, marginBottom: 4 }}>
+              Guest: {guestName} · {scorePct}% match
+            </span>
+            <span style={{ display: 'block', color: '#a1a1aa', fontStyle: 'italic', fontSize: '0.7rem' }}>
+              "{citation.snippet || (citation.content ? citation.content.slice(0, 80) + '...' : '')}"
+            </span>
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </span>
+  );
+}
+
 function AssistantMessage({ message, isLast }: { message: Message; isLast?: boolean }) {
   const hasRetrieval = message.metadata?.retrieval_performed;
   const citations = message.citations || message.metadata?.sources || [];
+
+  // Parse inline reference formats like [Source 1], [Source 2], etc. to use custom markup links
+  const processContent = (content: string) => {
+    let result = content;
+    
+    // Replace standard citation markers with special custom markdown link hash to be captured by link renderer
+    result = result.replace(/\[Source\s*(\d+)\]/gi, (match, num) => {
+      return `[${match}](#citation-${num})`;
+    });
+
+    return result;
+  };
+
+  const processedContent = processContent(message.content);
 
   return (
     <div style={{ display: 'flex', gap: 12, padding: '0 0 8px', alignItems: 'flex-start' }}>
@@ -120,9 +233,20 @@ function AssistantMessage({ message, isLast }: { message: Message; isLast?: bool
                   }
                   return <code className={className} {...props}>{children}</code>;
                 },
+                // Intercept custom citation links and render inline guest pills instead
+                a({ href, children, ...props }) {
+                  if (href && href.startsWith('#citation-')) {
+                    const num = parseInt(href.replace('#citation-', ''), 10);
+                    const citation = citations[num - 1];
+                    if (citation) {
+                      return <CitationChipInline citation={citation} index={num} />;
+                    }
+                  }
+                  return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+                }
               }}
             >
-              {message.content}
+              {processedContent}
             </ReactMarkdown>
           </div>
         )}
@@ -177,21 +301,21 @@ function AssistantMessage({ message, isLast }: { message: Message; isLast?: bool
           </div>
         )}
 
-        {/* Knowledge Base Citations */}
+        {/* Knowledge Base Citations Footer */}
         {citations.length > 0 && !message.is_streaming && (
           <div style={{
             marginTop: 14,
             padding: '10px 14px',
             borderRadius: 12,
-            background: 'rgba(59, 130, 246, 0.05)',
-            border: '1px solid rgba(59, 130, 246, 0.18)',
+            background: 'rgba(59, 130, 246, 0.04)',
+            border: '1px solid rgba(59, 130, 246, 0.15)',
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-accent)' }}>
               <Database size={13} />
-              <span>Retrieved Knowledge Base Sources ({citations.length})</span>
+              <span>✨ Verified Growth Insights from Lenny's Guests ({citations.length})</span>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {citations.map((cite) => (

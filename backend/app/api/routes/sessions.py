@@ -32,7 +32,7 @@ def create_session(
     Create a new session context.
     """
     uid = payload.user_id or uuid.uuid4()
-    return service.create_session(user_id=uid, title=payload.title)
+    return service.create_session(user_id=uid, title=payload.title, session_id=payload.id)
 
 
 @router.get("", response_model=List[SessionResponse])

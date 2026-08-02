@@ -79,7 +79,8 @@ export function useChat(sessionId: string | undefined) {
   const sendMessage = useCallback(
     async (content: string, targetSessionId?: string) => {
       const activeId = targetSessionId || sessionId;
-      if (!activeId || !content.trim() || isStreaming) return;
+      const targetIsStreaming = useChatStore.getState().isStreaming && useChatStore.getState().streamingSessionId === activeId;
+      if (!activeId || !content.trim() || targetIsStreaming) return;
       setError(null);
 
       // Optimistically add user message
@@ -259,6 +260,9 @@ export function useChat(sessionId: string | undefined) {
     ]
   );
 
+  const streamingSessionId = useChatStore((s) => s.streamingSessionId);
+  const isSessionStreaming = isStreaming && streamingSessionId === sessionId;
+
   const stopStreaming = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -269,7 +273,7 @@ export function useChat(sessionId: string | undefined) {
   return {
     messages,
     isLoading: query.isLoading,
-    isStreaming,
+    isStreaming: isSessionStreaming,
     streamingContent,
     error,
     sendMessage,
